@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2015 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -7,22 +7,15 @@
 # Test ZMQ interface
 #
 
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
+
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
+from test_framework.util import assert_equal, bytes_to_hex_str, start_nodes
+
 import zmq
-import binascii
 import struct
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-try:
-    import urllib.parse as urlparse
-except ImportError:
-    import urlparse
-
-class ZMQTest (BitcoinTestFramework):
+class ZMQTest(BitcoinTestFramework):
 
     port = 28332
 
@@ -51,8 +44,9 @@ class ZMQTest (BitcoinTestFramework):
         assert_equal(topic, b"hashtx")
         body = msg[1]
         nseq = msg[2]
+        [nseq] # hush pyflakes
         msgSequence = struct.unpack('<I', msg[-1])[-1]
-        assert_equal(msgSequence, 0) #must be sequence 0 on hashtx
+        assert_equal(msgSequence, 0) # must be sequence 0 on hashtx
 
         msg = self.zmqSubSocket.recv_multipart()
         topic = msg[0]
