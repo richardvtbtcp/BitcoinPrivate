@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2014 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -7,11 +7,12 @@
 # Test proper accounting with malleable transactions
 #
 
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
+
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
-from decimal import Decimal
-import os
-import shutil
+from test_framework.util import assert_equal, connect_nodes, \
+    sync_blocks, gather_inputs
+
 
 class TxnMallTest(BitcoinTestFramework):
 
@@ -77,7 +78,7 @@ class TxnMallTest(BitcoinTestFramework):
             assert_equal(tx2["confirmations"], 0)
 
         # Now give doublespend to miner:
-        mutated_txid = self.nodes[2].sendrawtransaction(doublespend["hex"])
+        self.nodes[2].sendrawtransaction(doublespend["hex"])
         # ... mine a block...
         self.nodes[2].generate(1)
 

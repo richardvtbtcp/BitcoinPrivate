@@ -1,22 +1,25 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2014 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # Test for -rpcbind, as well as -rpcallowip and -rpcconnect
 
-# Add python-bitcoinrpc to module search path:
+# Dependency: python-bitcoinrpc
+
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
+
+from test_framework.util import assert_equal, check_json_precision, \
+    initialize_chain, start_nodes, stop_nodes, wait_bitcoinds, \
+    bitcoind_processes, rpc_port
+from test_framework.authproxy import AuthServiceProxy
+from test_framework.netutil import addr_to_hex, get_bind_addrs, all_interfaces
+
 import os
 import sys
-
-import json
 import shutil
-import subprocess
 import tempfile
 import traceback
-
-from test_framework.util import *
-from test_framework.netutil import *
 
 def run_bind_test(tmpdir, allow_ips, connect_to, addresses, expected):
     '''
@@ -119,7 +122,6 @@ def main():
     check_json_precision()
 
     success = False
-    nodes = []
     try:
         print("Initializing test directory "+options.tmpdir)
         if not os.path.isdir(options.tmpdir):

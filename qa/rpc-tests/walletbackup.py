@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2014 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -33,10 +33,20 @@ Shutdown again, restore using importwallet,
 and confirm again balances are correct.
 """
 
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
+
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
+from test_framework.authproxy import JSONRPCException
+from test_framework.util import assert_equal, initialize_chain_clean, \
+    start_nodes, start_node, connect_nodes, stop_node, \
+    sync_blocks, sync_mempools
+
+import os
+import shutil
 from random import randint
+from decimal import Decimal
 import logging
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 class WalletBackupTest(BitcoinTestFramework):
@@ -133,6 +143,14 @@ class WalletBackupTest(BitcoinTestFramework):
         self.nodes[1].dumpwallet("walletdump")
         self.nodes[2].backupwallet("walletbak")
         self.nodes[2].dumpwallet("walletdump")
+
+        # Verify dumpwallet cannot overwrite an existing file
+        try:
+            self.nodes[2].dumpwallet("walletdump")
+            assert(False)
+        except JSONRPCException as e:
+            errorString = e.error['message']
+            assert("Cannot overwrite existing file" in errorString)
 
         logging.info("More transactions")
         for i in range(5):

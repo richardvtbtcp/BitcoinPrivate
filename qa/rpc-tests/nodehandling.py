@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2014 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -7,14 +7,13 @@
 # Test node handling
 #
 
-from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
-import base64
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import assert_equal, connect_nodes_bi, p2p_port
+
+import time
+
 try:
     import urllib.parse as urlparse
 except ImportError:

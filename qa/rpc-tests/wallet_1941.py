@@ -1,15 +1,18 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright (c) 2016 The Zcash developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # This is a regression test for #1941.
 
-from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
-from time import *
+import sys; assert sys.version_info < (3,), ur"This script does not run under Python 3. Please use Python 2.7.x."
 
-import sys
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import assert_equal, initialize_chain_clean, \
+    initialize_datadir, start_nodes, start_node, connect_nodes_bi, \
+    bitcoind_processes, wait_and_assert_operationid_status
+
+from decimal import Decimal
 
 starttime = 1388534400
 
@@ -39,30 +42,6 @@ class Wallet1941RegressionTest (BitcoinTestFramework):
         connect_nodes_bi(self.nodes, 0, 1)
         self.sync_all()
 
-    def wait_and_assert_operationid_status(self, myopid, in_status='success', in_errormsg=None):
-        print('waiting for async operation {}'.format(myopid))
-        opids = []
-        opids.append(myopid)
-        timeout = 300
-        status = None
-        errormsg = None
-        for x in xrange(1, timeout):
-            results = self.nodes[0].z_getoperationresult(opids)
-            if len(results)==0:
-                sleep(1)
-            else:
-                status = results[0]["status"]
-                if status == "failed":
-                    errormsg = results[0]['error']['message']
-                break
-        print('...returned status: {}'.format(status))
-        print('...error msg: {}'.format(errormsg))
-        assert_equal(in_status, status)
-        if errormsg is not None:
-            assert(in_errormsg is not None)
-            assert_equal(in_errormsg in errormsg, True)
-            print('...returned error: {}'.format(errormsg))
-
     def run_test (self):
         print "Mining blocks..."
 
@@ -70,13 +49,13 @@ class Wallet1941RegressionTest (BitcoinTestFramework):
         self.nodes[0].generate(101)
 
         mytaddr = self.nodes[0].getnewaddress()     # where coins were mined
-        myzaddr = self.nodes[0].z_getnewaddress()
+        myzaddr = self.nodes[0].z_getnewaddress('sprout')
 
         # Send 10 coins to our zaddr.
         recipients = []
         recipients.append({"address":myzaddr, "amount":Decimal('10.0') - Decimal('0.0001')})
         myopid = self.nodes[0].z_sendmany(mytaddr, recipients)
-        self.wait_and_assert_operationid_status(myopid)
+        wait_and_assert_operationid_status(self.nodes[0], myopid)
         self.nodes[0].generate(1)
 
         # Ensure the block times of the latest blocks exceed the variability
@@ -97,7 +76,7 @@ class Wallet1941RegressionTest (BitcoinTestFramework):
         # Start the new wallet
         self.add_second_node()
         self.nodes[1].getnewaddress()
-        self.nodes[1].z_getnewaddress()
+        self.nodes[1].z_getnewaddress('sprout')
         self.nodes[1].generate(101)
         self.sync_all()
 
