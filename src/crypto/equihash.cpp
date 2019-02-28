@@ -16,18 +16,17 @@
 #include "config/bitcoin-config.h"
 #endif
 
+#include "compat/endian.h"
 #include "crypto/equihash.h"
 #include "util.h"
-#ifndef __linux__
-#include "compat/endian.h"
-#endif
+
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
 #include <boost/optional.hpp>
 
-EhSolverCancelledException solver_cancelled;
+static EhSolverCancelledException solver_cancelled;
 
 template<unsigned int N, unsigned int K>
 int Equihash<N,K>::InitialiseState(eh_HashState& base_state)
