@@ -11,13 +11,26 @@ export BITCOIND=${REAL_BITCOIND}
 #Run the tests
 
 testScripts=(
+    'paymentdisclosure.py'
     'prioritisetransaction.py'
     'wallet_treestate.py'
+    'wallet_anchorfork.py'
+    'wallet_changeindicator.py'
+    'wallet_import_export.py'
     'wallet_protectcoinbase.py'
-    'wallet_shieldcoinbase.py'
+    'wallet_shieldcoinbase_sprout.py'
+    'wallet_shieldcoinbase_sapling.py'
+    'wallet_listreceived.py'
     'wallet.py'
+    'wallet_overwintertx.py'
+    'wallet_persistence.py'
     'wallet_nullifiers.py'
     'wallet_1941.py'
+    'wallet_addresses.py'
+    'wallet_sapling.py'
+    'wallet_listnotes.py'
+    'mergetoaddress_sprout.py'
+    'mergetoaddress_sapling.py'
     'listtransactions.py'
     'mempool_resurrect_test.py'
     'txn_doublespend.py'
@@ -26,24 +39,38 @@ testScripts=(
     'rawtransactions.py'
     'rest.py'
     'mempool_spendcoinbase.py'
-    'mempool_coinbase_spends.py'
+    'mempool_reorg.py'
     'mempool_tx_input_limit.py'
+    'mempool_nu_activation.py'
+    'mempool_tx_expiry.py'
     'httpbasics.py'
     'zapwallettxes.py'
     'proxy_test.py'
     'merkle_blocks.py'
     'fundrawtransaction.py'
     'signrawtransactions.py'
+    'signrawtransaction_offline.py'
     'walletbackup.py'
+    'key_import_export.py'
     'nodehandling.py'
     'reindex.py'
     'decodescript.py'
+    'blockchain.py'
     'disablewallet.py'
     'zcjoinsplit.py'
     'zcjoinsplitdoublespend.py'
+    'zkey_import_export.py'
+    'reorg_limit.py'
     'getblocktemplate.py'
     'bip65-cltv-p2p.py'
     'bipdersig-p2p.py'
+    'p2p_nu_peer_management.py'
+    'rewind_index.py'
+    'p2p_txexpiry_dos.py'
+    'p2p_txexpiringsoon.py'
+    'p2p_node_bloom.py'
+    'regtest_signrawtransaction.py'
+    'finalsaplingroot.py'
 );
 testScriptsExt=(
     'getblocktemplate_longpoll.py'
@@ -59,7 +86,6 @@ testScriptsExt=(
     'smartfees.py'
     'maxblocksinflight.py'
     'invalidblockrequest.py'
-    'p2p-versionbits-warning.py'
 #    'forknotify.py'
     'p2p-acceptblock.py'
 );
@@ -85,7 +111,7 @@ function runTestScript
 
     echo -e "=== Running testscript ${testName} ==="
 
-    if eval "$@" | sed 's/^/  /'
+    if eval "$@"
     then
         successCount=$(expr $successCount + 1)
         echo "--- Success: ${testName} ---"
