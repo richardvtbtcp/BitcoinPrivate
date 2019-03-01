@@ -86,9 +86,9 @@ public:
          * database (and is in any case of zero value).
          *
          * >>> from pyblake2 import blake2s
-         * >>> 'Zclassic' + blake2s(b'No taxation without representation. BTC #437541 - 00000000000000000397f175a94dd3f530b957182eb2a9f7b79a44a94a5e0450').hexdigest()
+         * >>> 'btcp' + blake2s(b'No taxation without representation. BTC #437541 - 00000000000000000397f175a94dd3f530b957182eb2a9f7b79a44a94a5e0450').hexdigest()
          */
-        const char* pszTimestamp = "Zclassic860413afe207aa173afee4fcfa9166dc745651c754a41ea8f155646f5aa828ac";
+        const char* pszTimestamp = "btcp860413afe207aa173afee4fcfa9166dc745651c754a41ea8f155646f5aa828ac";
         CMutableTransaction txNew;
         txNew.vin.resize(1);
         txNew.vout.resize(1);

@@ -7,7 +7,7 @@ P2P Port: 7933
 
 RPC Port: 7932
 
-Bitcoin Private is a fork of Zclassic, merging in a snapshotted UTXO set of Bitcoin. BTCP is financial freedom.
+Bitcoin Private is a fork of btcp, merging in a snapshotted UTXO set of Bitcoin. BTCP is financial freedom.
 
 Build
 -----------------
@@ -153,8 +153,8 @@ Build the latest version of BTCP using the instructions below, then follow the [
 About
 --------------
 
-[Bitcoin Private](http://zclassic.org/), like [Zclassic](https://zclassic.org/) and [Zcash](https://z.cash/), is an implementation of the "Zerocash" protocol.
-Based on Zclassic's code, it intends to offer a far higher standard of privacy
+[Bitcoin Private](http://btcp.org/), like [btcp](https://btcp.org/) and [Zcash](https://z.cash/), is an implementation of the "Zerocash" protocol.
+Based on btcp's code, it intends to offer a far higher standard of privacy
 through a sophisticated zero-knowledge proving scheme that preserves
 confidentiality of transaction metadata. Technical details are available
 in the Zcash [Protocol Specification](https://github.com/zcash/zips/raw/master/protocol/protocol.pdf).
@@ -189,7 +189,7 @@ https://github.com/zcash/zcash/wiki/1.0-User-Guide
 
 ### Need Help?
 
-* See documentation at the [Zcash Wiki](https://github.com/zcash/zcash/wiki) and the [Zclassic Wiki](https://github.com/z-classic/zclassic/wiki)
+* See documentation at the [Zcash Wiki](https://github.com/zcash/zcash/wiki) and the [btcp Wiki](https://github.com/z-classic/btcp/wiki)
   for help and more information.
 
 ### Want to participate in development?
