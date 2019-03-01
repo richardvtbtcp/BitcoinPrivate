@@ -1,11 +1,19 @@
 *.tar.gz
 *.deb
 *.exe
+.nfs*
+
 src/bitcoin
 src/btcpd
 src/btcp-cli
+src/zcashd
+src/zcash-cli
 src/zcash-gtest
 src/zcash-tx
+src/zclassicd
+src/zclassic-cli
+src/zclassic-gtest
+src/zclassic-tx
 src/test/test_bitcoin
 
 # Zcash utilities
@@ -57,7 +65,6 @@ src/univalue/gen
 *.o
 *.o-*
 .zcash
-.zclassic
 .btcprivate
 *.a
 *.pb.cc
@@ -115,5 +122,4 @@ libzcashconsensus.pc
 
 contrib/debian/files
 contrib/debian/substvars
-
 *.gen
