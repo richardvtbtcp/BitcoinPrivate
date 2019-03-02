@@ -1,285 +1,610 @@
-ACLOCAL_AMFLAGS = -I build-aux/m4
-SUBDIRS = src
-if ENABLE_MAN
-SUBDIRS += doc/man
+DIST_SUBDIRS = secp256k1 univalue
+
+AM_LDFLAGS = $(PTHREAD_CFLAGS) $(LIBTOOL_LDFLAGS) $(SAN_LDFLAGS) $(HARDENED_LDFLAGS)
+AM_CXXFLAGS = $(SAN_CXXFLAGS) $(HARDENED_CXXFLAGS) $(ERROR_CXXFLAGS)
+AM_CPPFLAGS = $(HARDENED_CPPFLAGS)
+EXTRA_LIBRARIES =
+
+if EMBEDDED_LEVELDB
+LEVELDB_CPPFLAGS += -I$(srcdir)/leveldb/include
+LEVELDB_CPPFLAGS += -I$(srcdir)/leveldb/helpers/memenv
+LIBLEVELDB += $(builddir)/leveldb/libleveldb.a
+LIBMEMENV  += $(builddir)/leveldb/libmemenv.a
+
+# NOTE: This dependency is not strictly necessary, but without it make may try to build both in parallel, which breaks the LevelDB build system in a race
+$(LIBLEVELDB): $(LIBMEMENV)
+
+$(LIBLEVELDB) $(LIBMEMENV):
+	@echo "Building LevelDB ..." && $(MAKE) -C $(@D) $(@F) CXX="$(CXX)" \
+	  CC="$(CC)" PLATFORM=$(TARGET_OS) AR="$(AR)" $(LEVELDB_TARGET_FLAGS) \
+          OPT="$(AM_CXXFLAGS) $(PIE_FLAGS) $(CXXFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -D__STDC_LIMIT_MACROS"
 endif
-.PHONY: deploy FORCE
 
-GZIP_ENV="-9n"
+BITCOIN_CONFIG_INCLUDES=-I$(builddir)/config
+BITCOIN_INCLUDES=-I$(builddir) -I$(builddir)/obj $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) $(CRYPTO_CFLAGS) $(SSL_CFLAGS)
 
+BITCOIN_INCLUDES += -I$(srcdir)/secp256k1/include
+BITCOIN_INCLUDES += -I$(srcdir)/snark
+BITCOIN_INCLUDES += -I$(srcdir)/snark/libsnark
+BITCOIN_INCLUDES += -I$(srcdir)/univalue/include
+
+LIBBITCOIN_SERVER=libbitcoin_server.a
+LIBBITCOIN_COMMON=libbitcoin_common.a
+LIBBITCOIN_CLI=libbitcoin_cli.a
+LIBBITCOIN_UTIL=libbitcoin_util.a
+LIBBITCOIN_CRYPTO=crypto/libbitcoin_crypto.a
+LIBSECP256K1=secp256k1/libsecp256k1.la
+LIBSNARK=snark/libsnark.a
+LIBUNIVALUE=univalue/libunivalue.la
+LIBZCASH=libzcash.a
+
+if ENABLE_ZMQ
+LIBBITCOIN_ZMQ=libbitcoin_zmq.a
+endif
+if ENABLE_PROTON
+LIBBITCOIN_PROTON=libbitcoin_proton.a
+endif
 if BUILD_BITCOIN_LIBS
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libzcashconsensus.pc
+LIBZCASH_CONSENSUS=libzcashconsensus.la
+endif
+if ENABLE_WALLET
+LIBBITCOIN_WALLET=libbitcoin_wallet.a
 endif
 
-BITCOIND_BIN=$(top_builddir)/src/btcpd$(EXEEXT)
-BITCOIN_CLI_BIN=$(top_builddir)/src/btcp-cli$(EXEEXT)
-BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
+$(LIBSECP256K1): $(wildcard secp256k1/src/*) $(wildcard secp256k1/include/*)
+	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
 
-##OSX_APP=Bitcoin-Qt.app
-##OSX_DMG=Bitcoin-Core.dmg
-##OSX_BACKGROUND_IMAGE=background.tiff
-##OSX_DEPLOY_SCRIPT=$(top_srcdir)/contrib/macdeploy/macdeployqtplus
-##OSX_FANCY_PLIST=$(top_srcdir)/contrib/macdeploy/fancy.plist
-##OSX_BASE_LPROJ_DIR=$(top_srcdir)/contrib/macdeploy/Base.lproj/InfoPlist.strings
-##OSX_INSTALLER_ICONS=$(top_srcdir)/src/qt/res/icons/bitcoin.icns
-##OSX_PLIST=$(top_srcdir)/share/qt/Info.plist #not installed
-##OSX_QT_TRANSLATIONS = da,de,es,hu,ru,uk,zh_CN,zh_TW
+LIBSNARK_CXXFLAGS = $(AM_CXXFLAGS) $(PIC_FLAGS) -DBINARY_OUTPUT -DNO_PT_COMPRESSION=1 -fstack-protector-all
+LIBSNARK_CONFIG_FLAGS = CURVE=ALT_BN128 NO_PROCPS=1 NO_DOCS=1 STATIC=1 NO_SUPERCOP=1 FEATUREFLAGS=-DMONTGOMERY_OUTPUT NO_COPY_DEPINST=1 NO_COMPILE_LIBGTEST=1
+if HAVE_OPENMP
+LIBSNARK_CONFIG_FLAGS += MULTICORE=1
+endif
+if TARGET_DARWIN
+LIBSNARK_CONFIG_FLAGS += PLATFORM=darwin
+endif
 
-DIST_DOCS = $(wildcard doc/*.md) $(wildcard doc/release-notes/*.md)
+$(LIBSNARK): $(wildcard snark/src/*)
+	$(AM_V_at) CC="$(CC)" CXX="$(CXX)" AR="$(AR)" CXXFLAGS="$(LIBSNARK_CXXFLAGS)" $(MAKE) $(AM_MAKEFLAGS) -C snark/ DEPINST="$(LIBSNARK_DEPINST)" $(LIBSNARK_CONFIG_FLAGS) OPTFLAGS="-O2 -march=x86-64"
 
-BIN_CHECKS=$(top_srcdir)/contrib/devtools/symbol-check.py \
-           $(top_srcdir)/contrib/devtools/security-check.py
+libsnark-tests: $(wildcard snark/src/*)
+	$(AM_V_at) CC="$(CC)" CXX="$(CXX)" AR="$(AR)" CXXFLAGS="$(LIBSNARK_CXXFLAGS)" $(MAKE) $(AM_MAKEFLAGS) -C snark/ check DEPINST="$(LIBSNARK_DEPINST)" $(LIBSNARK_CONFIG_FLAGS) OPTFLAGS="-O2 -march=x86-64"
 
-WINDOWS_PACKAGING = $(top_srcdir)/share/pixmaps/bitcoin.ico \
-  $(top_srcdir)/share/pixmaps/nsis-header.bmp \
-  $(top_srcdir)/share/pixmaps/nsis-wizard.bmp
+$(LIBUNIVALUE): $(wildcard univalue/lib/*) $(wildcard univalue/include/*)
+	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
 
-##OSX_PACKAGING = $(OSX_DEPLOY_SCRIPT) $(OSX_FANCY_PLIST) $(OSX_INSTALLER_ICONS) $(OSX_BASE_LPROJ_DIR) \
-##  $(top_srcdir)/contrib/macdeploy/$(OSX_BACKGROUND_IMAGE) \
-##  $(top_srcdir)/contrib/macdeploy/DS_Store \
-##  $(top_srcdir)/contrib/macdeploy/detached-sig-apply.sh \
-##  $(top_srcdir)/contrib/macdeploy/detached-sig-create.sh
+# Make is not made aware of per-object dependencies to avoid limiting building parallelization
+# But to build the less dependent modules first, we manually select their order here:
+EXTRA_LIBRARIES += \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_SERVER) \
+  $(LIBBITCOIN_CLI) \
+  $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_ZMQ) \
+  $(LIBBITCOIN_PROTON) \
+  $(LIBZCASH)
 
-COVERAGE_INFO = baseline_filtered_combined.info baseline.info block_test.info \
-  leveldb_baseline.info test_bitcoin_filtered.info total_coverage.info \
-  baseline_filtered.info block_test_filtered.info \
-  leveldb_baseline_filtered.info test_bitcoin_coverage.info test_bitcoin.info \
-  zcash-gtest.info zcash-gtest_filtered.info zcash-gtest_coverage.info
+lib_LTLIBRARIES = $(LIBZCASH_CONSENSUS)
 
-dist-hook:
-	-$(MAKE) -C $(top_distdir)/src/leveldb clean
-	-$(MAKE) -C $(top_distdir)/src/secp256k1 distclean
-	-$(GIT) archive --format=tar HEAD -- src/clientversion.cpp | $(AMTAR) -C $(top_distdir) -xf -
+bin_PROGRAMS =
+noinst_PROGRAMS =
+TESTS =
 
-distcheck-hook:
-	$(MKDIR_P) $(top_distdir)/_build/src/leveldb
-	cp -rf $(top_srcdir)/src/leveldb/* $(top_distdir)/_build/src/leveldb/
-	-$(MAKE) -C $(top_distdir)/_build/src/leveldb clean
+if BUILD_BITCOIND
+  bin_PROGRAMS += btcpd
+endif
 
-distcleancheck:
-	@:
+if BUILD_BITCOIN_UTILS
+  bin_PROGRAMS += btcp-cli btcp-tx
+endif
 
-$(BITCOIN_WIN_INSTALLER): all-recursive
-	$(MKDIR_P) $(top_builddir)/release
-	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
-	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/release
-	@test -f $(MAKENSIS) && $(MAKENSIS) -V2 $(top_builddir)/share/setup.nsi || \
-	  echo error: could not build $@
-	@echo built $@
+LIBZCASH_H = \
+  zcash/IncrementalMerkleTree.hpp \
+  zcash/NoteEncryption.hpp \
+  zcash/Address.hpp \
+  zcash/JoinSplit.hpp \
+  zcash/Note.hpp \
+  zcash/prf.h \
+  zcash/Proof.hpp \
+  zcash/util.h \
+  zcash/Zcash.h \
+  zcash/zip32.h
 
-$(if $(findstring src/,$(MAKECMDGOALS)),$(MAKECMDGOALS), none): FORCE
-	$(MAKE) -C src $(patsubst src/%,%,$@)
+.PHONY: FORCE collate-libsnark check-symbols check-security
+# bitcoin core #
+BITCOIN_CORE_H = \
+  addrman.h \
+  alert.h \
+  amount.h \
+  amqp/amqpabstractnotifier.h \
+  amqp/amqpconfig.h \
+  amqp/amqpnotificationinterface.h \
+  amqp/amqppublishnotifier.h \
+  amqp/amqpsender.h \
+  arith_uint256.h \
+  asyncrpcoperation.h \
+  asyncrpcqueue.h \
+  base58.h \
+  bech32.h \
+  bloom.h \
+  chain.h \
+  chainparams.h \
+  chainparamsbase.h \
+  chainparamsseeds.h \
+  checkpoints.h \
+  checkqueue.h \
+  clientversion.h \
+  coincontrol.h \
+  coins.h \
+  compat.h \
+  compat/byteswap.h \
+  compat/endian.h \
+  compat/sanity.h \
+  compressor.h \
+  consensus/consensus.h \
+  consensus/params.h \
+  consensus/upgrades.h \
+  consensus/validation.h \
+  core_io.h \
+  core_memusage.h \
+  deprecation.h \
+  hash.h \
+  httprpc.h \
+  httpserver.h \
+  init.h \
+  key.h \
+  key_io.h \
+  keystore.h \
+  dbwrapper.h \
+  limitedmap.h \
+  main.h \
+  memusage.h \
+  merkleblock.h \
+  metrics.h \
+  miner.h \
+  mruset.h \
+  net.h \
+  netbase.h \
+  noui.h \
+  paymentdisclosure.h \
+  paymentdisclosuredb.h \
+  policy/fees.h \
+  pow.h \
+  prevector.h \
+  primitives/block.h \
+  primitives/transaction.h \
+  protocol.h \
+  pubkey.h \
+  random.h \
+  reverselock.h \
+  rpc/client.h \
+  rpc/protocol.h \
+  rpc/server.h \
+  rpc/register.h \
+  scheduler.h \
+  script/interpreter.h \
+  script/script.h \
+  script/script_error.h \
+  script/sigcache.h \
+  script/sign.h \
+  script/standard.h \
+  serialize.h \
+  streams.h \
+  support/allocators/secure.h \
+  support/allocators/zeroafterfree.h \
+  support/cleanse.h \
+  support/events.h \
+  support/pagelocker.h \
+  sync.h \
+  threadsafety.h \
+  timedata.h \
+  tinyformat.h \
+  torcontrol.h \
+  transaction_builder.h \
+  txdb.h \
+  txmempool.h \
+  ui_interface.h \
+  uint256.h \
+  uint252.h \
+  undo.h \
+  util.h \
+  utilmoneystr.h \
+  utilstrencodings.h \
+  utiltime.h \
+  validationinterface.h \
+  version.h \
+  wallet/asyncrpcoperation_mergetoaddress.h \
+  wallet/asyncrpcoperation_sendmany.h \
+  wallet/asyncrpcoperation_shieldcoinbase.h \
+  wallet/crypter.h \
+  wallet/db.h \
+  wallet/rpcwallet.h \
+  wallet/wallet.h \
+  wallet/wallet_ismine.h \
+  wallet/walletdb.h \
+  zmq/zmqabstractnotifier.h \
+  zmq/zmqconfig.h\
+  zmq/zmqnotificationinterface.h \
+  zmq/zmqpublishnotifier.h
 
-##$(OSX_APP)/Contents/PkgInfo:
-##	$(MKDIR_P) $(@D)
-##	@echo "APPL????" > $@
-##
-##$(OSX_APP)/Contents/Resources/empty.lproj:
-##	$(MKDIR_P) $(@D)
-##	@touch $@
-##
-##$(OSX_APP)/Contents/Info.plist: $(OSX_PLIST)
-##	$(MKDIR_P) $(@D)
-##	$(INSTALL_DATA) $< $@
-##
-##$(OSX_APP)/Contents/Resources/bitcoin.icns: $(OSX_INSTALLER_ICONS)
-##	$(MKDIR_P) $(@D)
-##	$(INSTALL_DATA) $< $@
-##
-##$(OSX_APP)/Contents/MacOS/Bitcoin-Qt: $(BITCOIN_QT_BIN)
-##	$(MKDIR_P) $(@D)
-##	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM)  $< $@
-##
-##$(OSX_APP)/Contents/Resources/Base.lproj/InfoPlist.strings: $(OSX_BASE_LPROJ_DIR)
-##	$(MKDIR_P) $(@D)
-##	$(INSTALL_DATA) $< $@
-##
-##OSX_APP_BUILT=$(OSX_APP)/Contents/PkgInfo $(OSX_APP)/Contents/Resources/empty.lproj \
-##  $(OSX_APP)/Contents/Resources/bitcoin.icns $(OSX_APP)/Contents/Info.plist \
-##  $(OSX_APP)/Contents/MacOS/Bitcoin-Qt $(OSX_APP)/Contents/Resources/Base.lproj/InfoPlist.strings
-##
-##if BUILD_DARWIN
-##$(OSX_DMG): $(OSX_APP_BUILT) $(OSX_PACKAGING)
-##	$(OSX_DEPLOY_SCRIPT) $(OSX_APP) -add-qt-tr $(OSX_QT_TRANSLATIONS) -translations-dir=$(QT_TRANSLATION_DIR) -dmg -fancy $(OSX_FANCY_PLIST) -verbose 2
-##
-##deploydir: $(OSX_DMG)
-##else
-##APP_DIST_DIR=$(top_builddir)/dist
-##APP_DIST_EXTRAS=$(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE) $(APP_DIST_DIR)/.DS_Store $(APP_DIST_DIR)/Applications
-##
-##$(APP_DIST_DIR)/Applications:
-##	@rm -f $@
-##	@cd $(@D); $(LN_S) /Applications $(@F)
-##
-##$(APP_DIST_EXTRAS): $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Bitcoin-Qt
-##
-##$(OSX_DMG): $(APP_DIST_EXTRAS)
-##	$(GENISOIMAGE) -no-cache-inodes -D -l -probe -V "Bitcoin-Core" -no-pad -r -apple -o $@ dist
-##
-##$(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE): contrib/macdeploy/$(OSX_BACKGROUND_IMAGE)
-##	$(MKDIR_P) $(@D)
-##	$(INSTALL) $< $@
-##$(APP_DIST_DIR)/.DS_Store: contrib/macdeploy/DS_Store
-##	$(INSTALL) $< $@
-##
-##$(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Bitcoin-Qt: $(OSX_APP_BUILT) $(OSX_PACKAGING)
-##	INSTALLNAMETOOL=$(INSTALLNAMETOOL)  OTOOL=$(OTOOL) STRIP=$(STRIP) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) -translations-dir=$(QT_TRANSLATION_DIR) -add-qt-tr $(OSX_QT_TRANSLATIONS) -verbose 2
-##
-##deploydir: $(APP_DIST_EXTRAS)
-##endif
-##
-##if TARGET_DARWIN
-##appbundle: $(OSX_APP_BUILT)
-##deploy: $(OSX_DMG)
-##endif
+
+obj/build.h: FORCE
+	@$(MKDIR_P) $(builddir)/obj
+	@$(top_srcdir)/share/genbuild.sh $(abs_top_builddir)/src/obj/build.h \
+	  $(abs_top_srcdir)
+libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
+
+# server: btcpd
+libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_server_a_SOURCES = \
+  sendalert.cpp \
+  addrman.cpp \
+  alert.cpp \
+  alertkeys.h \
+  asyncrpcoperation.cpp \
+  asyncrpcqueue.cpp \
+  bloom.cpp \
+  chain.cpp \
+  checkpoints.cpp \
+  deprecation.cpp \
+  httprpc.cpp \
+  httpserver.cpp \
+  init.cpp \
+  dbwrapper.cpp \
+  main.cpp \
+  merkleblock.cpp \
+  metrics.cpp \
+  miner.cpp \
+  net.cpp \
+  noui.cpp \
+  paymentdisclosure.cpp \
+  paymentdisclosuredb.cpp \
+  policy/fees.cpp \
+  pow.cpp \
+  rest.cpp \
+  rpc/blockchain.cpp \
+  rpc/mining.cpp \
+  rpc/misc.cpp \
+  rpc/net.cpp \
+  rpc/rawtransaction.cpp \
+  rpc/server.cpp \
+  script/sigcache.cpp \
+  timedata.cpp \
+  torcontrol.cpp \
+  txdb.cpp \
+  txmempool.cpp \
+  validationinterface.cpp \
+  $(BITCOIN_CORE_H) \
+  $(LIBZCASH_H)
+
+if ENABLE_ZMQ
+libbitcoin_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
+libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_zmq_a_SOURCES = \
+  zmq/zmqabstractnotifier.cpp \
+  zmq/zmqnotificationinterface.cpp \
+  zmq/zmqpublishnotifier.cpp
+endif
+
+if ENABLE_PROTON
+libbitcoin_proton_a_CPPFLAGS = $(BITCOIN_INCLUDES)
+libbitcoin_proton_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_proton_a_SOURCES = \
+  amqp/amqpabstractnotifier.cpp \
+  amqp/amqpnotificationinterface.cpp \
+  amqp/amqppublishnotifier.cpp
+endif
+
+# wallet: btcpd, but only linked when wallet enabled
+libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_wallet_a_SOURCES = \
+  utiltest.cpp \
+  utiltest.h \
+  zcbenchmarks.cpp \
+  zcbenchmarks.h \
+  wallet/asyncrpcoperation_mergetoaddress.cpp \
+  wallet/asyncrpcoperation_sendmany.cpp \
+  wallet/asyncrpcoperation_shieldcoinbase.cpp \
+  wallet/crypter.cpp \
+  wallet/db.cpp \
+  paymentdisclosure.cpp \
+  paymentdisclosuredb.cpp \
+  wallet/rpcdisclosure.cpp \
+  wallet/rpcdump.cpp \
+  wallet/rpcwallet.cpp \
+  wallet/wallet.cpp \
+  wallet/wallet_ismine.cpp \
+  wallet/walletdb.cpp \
+  $(BITCOIN_CORE_H) \
+  $(LIBZCASH_H)
+
+# crypto primitives library
+crypto_libbitcoin_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES)
+crypto_libbitcoin_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+crypto_libbitcoin_crypto_a_SOURCES = \
+  crypto/common.h \
+  crypto/equihash.cpp \
+  crypto/equihash.h \
+  crypto/equihash.tcc \
+  crypto/hmac_sha256.cpp \
+  crypto/hmac_sha256.h \
+  crypto/hmac_sha512.cpp \
+  crypto/hmac_sha512.h \
+  crypto/ripemd160.cpp \
+  crypto/ripemd160.h \
+  crypto/sha1.cpp \
+  crypto/sha1.h \
+  crypto/sha256.cpp \
+  crypto/sha256.h \
+  crypto/sha512.cpp \
+  crypto/sha512.h
+
+if ENABLE_MINING
+EQUIHASH_TROMP_SOURCES = \
+  pow/tromp/equi_miner.h \
+  pow/tromp/equi.h \
+  pow/tromp/osx_barrier.h
+
+crypto_libbitcoin_crypto_a_CPPFLAGS += \
+  -DEQUIHASH_TROMP_ATOMIC
+crypto_libbitcoin_crypto_a_SOURCES += \
+  ${EQUIHASH_TROMP_SOURCES}
+endif
+
+# common: shared between btcpd and non-server tools
+libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_common_a_SOURCES = \
+  amount.cpp \
+  arith_uint256.cpp \
+  base58.cpp \
+  bech32.cpp \
+  chainparams.cpp \
+  coins.cpp \
+  compressor.cpp \
+  consensus/upgrades.cpp \
+  core_read.cpp \
+  core_write.cpp \
+  hash.cpp \
+  key.cpp \
+  key_io.cpp \
+  keystore.cpp \
+  netbase.cpp \
+  primitives/block.cpp \
+  primitives/transaction.cpp \
+  protocol.cpp \
+  pubkey.cpp \
+  scheduler.cpp \
+  script/interpreter.cpp \
+  script/script.cpp \
+  script/script_error.cpp \
+  script/sign.cpp \
+  script/standard.cpp \
+  transaction_builder.cpp \
+  $(BITCOIN_CORE_H) \
+  $(LIBZCASH_H)
+
+# util: shared between all executables.
+# This library *must* be included to make sure that the glibc
+# backward-compatibility objects and their sanity checks are linked.
+libbitcoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_util_a_SOURCES = \
+  support/pagelocker.cpp \
+  chainparamsbase.cpp \
+  clientversion.cpp \
+  compat/glibc_sanity.cpp \
+  compat/glibcxx_sanity.cpp \
+  compat/strnlen.cpp \
+  random.cpp \
+  rpc/protocol.cpp \
+  support/cleanse.cpp \
+  sync.cpp \
+  uint256.cpp \
+  util.cpp \
+  utilmoneystr.cpp \
+  utilstrencodings.cpp \
+  utiltime.cpp \
+  $(BITCOIN_CORE_H) \
+  $(LIBZCASH_H)
+
+if GLIBC_BACK_COMPAT
+libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
+endif
+
+# cli: btcp-cli
+libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_cli_a_SOURCES = \
+  rpc/client.cpp \
+  $(BITCOIN_CORE_H) \
+  $(LIBZCASH_H)
+
+nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
+#
+
+# bitcoind binary #
+btcpd_SOURCES = bitcoind.cpp
+btcpd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-deploy: $(BITCOIN_WIN_INSTALLER)
+btcpd_SOURCES += bitcoind-res.rc
 endif
 
-$(BITCOIND_BIN): FORCE
-	$(MAKE) -C src $(@F)
+btcpd_LDADD = \
+  $(LIBBITCOIN_SERVER) \
+  $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_ZMQ) \
+  $(LIBBITCOIN_PROTON) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBZCASH) \
+  $(LIBSNARK) \
+  $(LIBLEVELDB) \
+  $(LIBMEMENV) \
+  $(LIBSECP256K1)
 
-$(BITCOIN_CLI_BIN): FORCE
-	$(MAKE) -C src $(@F)
+btcpd_LDADD += \
+  $(BOOST_LIBS) \
+  $(BDB_LIBS) \
+  $(SSL_LIBS) \
+  $(CRYPTO_LIBS) \
+  $(EVENT_PTHREADS_LIBS) \
+  $(EVENT_LIBS) \
+  $(ZMQ_LIBS) \
+  $(PROTON_LIBS) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBZCASH_LIBS)
 
-if USE_LCOV
+# bitcoin-cli binary #
+btcp_cli_SOURCES = bitcoin-cli.cpp
+btcp_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+btcp_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+btcp_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
-baseline.info:
-	$(LCOV) -c -i -d $(abs_builddir)/src -o $@
-
-baseline_filtered.info: baseline.info
-	$(LCOV) -r $< "/usr/include/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/*.h" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/boost/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gmock/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gtest/*" \
-                      "$(abs_builddir)/src/gtest/*" \
-                      "$(abs_builddir)/src/test/*" \
-                      "$(abs_builddir)/src/wallet/gtest/*" \
-                      "$(abs_builddir)/src/wallet/test/*" \
-                      -o $@
-
-leveldb_baseline.info: baseline_filtered.info
-	$(LCOV) -c -i -d $(abs_builddir)/src/leveldb -b $(abs_builddir)/src/leveldb -o $@
-
-leveldb_baseline_filtered.info: leveldb_baseline.info
-	$(LCOV) -r $< "/usr/include/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/*.h" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/boost/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gmock/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gtest/*" \
-                      "$(abs_builddir)/src/gtest/*" \
-                      "$(abs_builddir)/src/test/*" \
-                      "$(abs_builddir)/src/wallet/gtest/*" \
-                      "$(abs_builddir)/src/wallet/test/*" \
-                      -o $@
-
-baseline_filtered_combined.info: leveldb_baseline_filtered.info baseline_filtered.info
-	$(LCOV) -a leveldb_baseline_filtered.info -a baseline_filtered.info -o $@
-
-test_bitcoin.info: baseline_filtered_combined.info
-	$(MAKE) -C src/ bitcoin_test_check
-	$(LCOV) -c -d $(abs_builddir)/src -t test_bitcoin -o $@
-	$(LCOV) -z -d $(abs_builddir)/src
-	$(LCOV) -z -d $(abs_builddir)/src/leveldb
-
-test_bitcoin_filtered.info: test_bitcoin.info
-	$(LCOV) -r $< "/usr/include/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/*.h" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/boost/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gmock/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gtest/*" \
-                      "$(abs_builddir)/src/gtest/*" \
-                      "$(abs_builddir)/src/test/*" \
-                      "$(abs_builddir)/src/wallet/gtest/*" \
-                      "$(abs_builddir)/src/wallet/test/*" \
-                      -o $@
-
-zcash-gtest.info: baseline_filtered_combined.info
-	$(MAKE) -C src/ zcash-gtest_check
-	$(LCOV) -c -d $(abs_builddir)/src -t zcash-gtest -o $@
-	$(LCOV) -z -d $(abs_builddir)/src
-	$(LCOV) -z -d $(abs_builddir)/src/leveldb
-
-zcash-gtest_filtered.info: zcash-gtest.info
-	$(LCOV) -r $< "/usr/include/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/*.h" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/boost/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gmock/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gtest/*" \
-                      "$(abs_builddir)/src/gtest/*" \
-                      "$(abs_builddir)/src/test/*" \
-                      "$(abs_builddir)/src/wallet/gtest/*" \
-                      "$(abs_builddir)/src/wallet/test/*" \
-                      -o $@
-
-block_test.info: test_bitcoin_filtered.info
-	$(MKDIR_P) qa/tmp
-	-@TIMEOUT=15 qa/pull-tester/run-bitcoind-for-test.sh $(JAVA) -jar $(JAVA_COMPARISON_TOOL) qa/tmp/compTool 0
-	$(LCOV) -c -d $(abs_builddir)/src --t BitcoinJBlockTest -o $@
-	$(LCOV) -z -d $(abs_builddir)/src
-	$(LCOV) -z -d $(abs_builddir)/src/leveldb
-
-block_test_filtered.info: block_test.info
-	$(LCOV) -r $< "/usr/include/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/*.h" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/boost/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gmock/*" \
-                      "$(abs_builddir)/depends/$(BUILD)/include/gtest/*" \
-                      "$(abs_builddir)/src/gtest/*" \
-                      "$(abs_builddir)/src/test/*" \
-                      "$(abs_builddir)/src/wallet/gtest/*" \
-                      "$(abs_builddir)/src/wallet/test/*" \
-                      -o $@
-
-test_bitcoin_coverage.info: baseline_filtered_combined.info test_bitcoin_filtered.info
-	$(LCOV) -a baseline_filtered.info -a leveldb_baseline_filtered.info -a test_bitcoin_filtered.info -o $@
-
-zcash-gtest_coverage.info: baseline_filtered_combined.info zcash-gtest_filtered.info
-	$(LCOV) -a baseline_filtered.info -a leveldb_baseline_filtered.info -a zcash-gtest_filtered.info -o $@
-
-total_coverage.info:  baseline_filtered_combined.info test_bitcoin_filtered.info zcash-gtest_filtered.info block_test_filtered.info
-	$(LCOV) -a baseline_filtered.info -a leveldb_baseline_filtered.info -a test_bitcoin_filtered.info -a zcash-gtest_filtered.info -a block_test_filtered.info -o $@ | $(GREP) "\%" | $(AWK) '{ print substr($$3,2,50) "/" $$5 }' > coverage_percent.txt
-
-test_bitcoin.coverage/.dirstamp:  test_bitcoin_coverage.info
-	$(GENHTML) -s $< -o $(@D)
-	@touch $@
-
-zcash-gtest.coverage/.dirstamp:  zcash-gtest_coverage.info
-	$(GENHTML) -s $< -o $(@D)
-	@touch $@
-
-cov-zcash: zcash-gtest.coverage/.dirstamp
-
-total.coverage/.dirstamp: total_coverage.info
-	$(GENHTML) -s $< -o $(@D)
-	@touch $@
-
-cov: test_bitcoin.coverage/.dirstamp cov-zcash total.coverage/.dirstamp
-
+if TARGET_WINDOWS
+btcp_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
-if USE_COMPARISON_TOOL
-check-local:
-	$(MKDIR_P) qa/tmp
-	@qa/pull-tester/run-bitcoind-for-test.sh $(JAVA) -jar $(JAVA_COMPARISON_TOOL) qa/tmp/compTool $(COMPARISON_TOOL_REORG_TESTS) 2>&1
+btcp_cli_LDADD = \
+  $(LIBBITCOIN_CLI) \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_UTIL) \
+  $(BOOST_LIBS) \
+  $(SSL_LIBS) \
+  $(CRYPTO_LIBS) \
+  $(EVENT_LIBS) \
+  $(LIBZCASH) \
+  $(LIBSNARK) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBZCASH_LIBS)
+#
+
+# btcp-tx binary #
+btcp_tx_SOURCES = bitcoin-tx.cpp
+btcp_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+btcp_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+btcp_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+if TARGET_WINDOWS
+btcp_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-dist_bin_SCRIPTS = btcputil/fetch-params.sh
-dist_noinst_SCRIPTS = autogen.sh btcputil/build-debian-package.sh btcputil/build.sh
+# FIXME: Is libzcash needed for btcp_tx?
+btcp_tx_LDADD = \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBSECP256K1) \
+  $(LIBZCASH) \
+  $(LIBSNARK) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBZCASH_LIBS)
 
-EXTRA_DIST = $(top_srcdir)/share/genbuild.sh qa/pull-tester/rpc-tests.sh qa/pull-tester/run-bitcoin-cli qa/rpc-tests qa/zcash $(DIST_DOCS) $(BIN_CHECKS)
+btcp_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+#
 
-install-exec-hook:
-	mv $(DESTDIR)$(bindir)/fetch-params.sh $(DESTDIR)$(bindir)/zcash-fetch-params
+# btcp protocol primitives #
+libzcash_a_SOURCES = \
+  zcash/IncrementalMerkleTree.cpp \
+  zcash/NoteEncryption.cpp \
+  zcash/Address.cpp \
+  zcash/JoinSplit.cpp \
+  zcash/Proof.cpp \
+  zcash/Note.cpp \
+  zcash/prf.cpp \
+  zcash/util.cpp \
+  zcash/zip32.cpp \
+  zcash/circuit/commitment.tcc \
+  zcash/circuit/gadget.tcc \
+  zcash/circuit/merkle.tcc \
+  zcash/circuit/note.tcc \
+  zcash/circuit/prfs.tcc \
+  zcash/circuit/utils.tcc
 
-CLEANFILES = $(OSX_DMG) $(BITCOIN_WIN_INSTALLER)
+libzcash_a_CPPFLAGS = $(AM_CPPFLAGS) $(PIC_FLAGS) -DBINARY_OUTPUT -DCURVE_ALT_BN128 -DBOOST_SPIRIT_THREADSAFE -fvisibility=hidden -DSTATIC $(BITCOIN_INCLUDES)
+libzcash_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libzcash_a_LDFLAGS = $(AM_LDFLAGS)
 
-.INTERMEDIATE: $(COVERAGE_INFO)
+libzcash_a_CPPFLAGS += -DMONTGOMERY_OUTPUT
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-man
+# zcashconsensus library #
+if BUILD_BITCOIN_LIBS
+include_HEADERS = script/zcashconsensus.h
+libzcashconsensus_la_SOURCES = \
+  crypto/equihash.cpp \
+  crypto/hmac_sha512.cpp \
+  crypto/ripemd160.cpp \
+  crypto/sha1.cpp \
+  crypto/sha256.cpp \
+  crypto/sha512.cpp \
+  hash.cpp \
+  primitives/transaction.cpp \
+  pubkey.cpp \
+  script/zcashconsensus.cpp \
+  script/interpreter.cpp \
+  script/script.cpp \
+  uint256.cpp \
+  utilstrencodings.cpp
+
+if GLIBC_BACK_COMPAT
+  libzcashconsensus_la_SOURCES += compat/glibc_compat.cpp
+endif
+
+libzcashconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+libzcashconsensus_la_LIBADD = $(LIBSECP256K1)
+libzcashconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libzcashconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+
+endif
+#
+
+CLEANFILES = leveldb/libleveldb.a leveldb/libmemenv.a *.gcda *.gcno */*.gcno wallet/*/*.gcno
+
+DISTCLEANFILES = obj/build.h
+
+EXTRA_DIST = leveldb snark
 
 clean-local:
-	rm -rf test_bitcoin.coverage/ zcash-gtest.coverage/ total.coverage/ $(OSX_APP)
+	-$(MAKE) -C leveldb clean
+	-$(MAKE) -C secp256k1 clean
+	-$(MAKE) -C snark clean
+	-$(MAKE) -C univalue clean
+	rm -f leveldb/*/*.gcno leveldb/helpers/memenv/*.gcno
+	-rm -f config.h
+
+.rc.o:
+	@test -f $(WINDRES)
+	$(AM_V_GEN) $(WINDRES) -DWINDRES_PREPROC -i $< -o $@
+
+.mm.o:
+	$(AM_V_CXX) $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	  $(CPPFLAGS) $(AM_CXXFLAGS) $(AM_CXXFLAGS) $(PIE_FLAGS) $(CXXFLAGS) -c -o $@ $<
+
+check-symbols: $(bin_PROGRAMS)
+if GLIBC_BACK_COMPAT
+	@echo "Checking glibc back compat of [$(bin_PROGRAMS)]..."
+	$(AM_V_at) READELF=$(READELF) CPPFILT=$(CPPFILT) $(top_srcdir)/contrib/devtools/symbol-check.py $(bin_PROGRAMS)
+endif
+
+check-security: $(bin_PROGRAMS)
+if HARDEN
+	@echo "Checking binary security of [$(bin_PROGRAMS)]..."
+	$(AM_V_at) READELF=$(READELF) OBJDUMP=$(OBJDUMP) $(top_srcdir)/contrib/devtools/security-check.py $(bin_PROGRAMS)
+endif
+
+%.pb.cc %.pb.h: %.proto
+	@test -f $(PROTOC)
+	$(AM_V_GEN) $(PROTOC) --cpp_out=$(@D) --proto_path=$(abspath $(<D) $<)
+
+if ENABLE_TESTS
+include Makefile.test.include
+include Makefile.gtest.include
+endif
