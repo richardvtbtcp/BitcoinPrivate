@@ -12,11 +12,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libzcashconsensus.pc
 endif
 
-BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
-BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 BITCOIND_BIN=$(top_builddir)/src/btcpd$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/btcp-cli$(EXEEXT)
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
+
 ##OSX_APP=Bitcoin-Qt.app
 ##OSX_DMG=Bitcoin-Core.dmg
 ##OSX_BACKGROUND_IMAGE=background.tiff
