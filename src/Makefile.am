@@ -92,7 +92,7 @@ noinst_PROGRAMS =
 TESTS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += zclassicd
+  bin_PROGRAMS += btcpd
 endif
 
 if BUILD_BITCOIN_UTILS
@@ -359,7 +359,7 @@ crypto_libbitcoin_crypto_a_SOURCES += \
   ${EQUIHASH_TROMP_SOURCES}
 endif
 
-# common: shared between zclassicd and non-server tools
+# common: shared between btcpd and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
@@ -500,7 +500,7 @@ btcp_cli_LDADD = \
   $(LIBZCASH_LIBS)
 #
 
-# zclassic-tx binary #
+# btcp-tx binary #
 btcp_tx_SOURCES = bitcoin-tx.cpp
 btcp_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 btcp_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
