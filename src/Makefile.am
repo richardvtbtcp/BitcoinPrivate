@@ -70,10 +70,6 @@ bin_PROGRAMS =
 noinst_PROGRAMS =
 TESTS =
 
-if BUILD_BITCOIND
-  bin_PROGRAMS += btcpd
-endif
-
 if BUILD_BITCOIN_UTILS
   bin_PROGRAMS += btcp-cli zcash-tx
 endif
