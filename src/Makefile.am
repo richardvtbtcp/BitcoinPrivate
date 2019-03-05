@@ -401,7 +401,6 @@ libbitcoin_util_a_SOURCES = \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
   random.cpp \
-  rpcprotocol.cpp \
 	rpc/protocol.cpp \
   support/cleanse.cpp \
   sync.cpp \
@@ -421,7 +420,6 @@ endif
 libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_cli_a_SOURCES = \
-  rpcclient.cpp \
 	rpc/client.cpp \
   $(BITCOIN_CORE_H) \
   $(LIBZCASH_H)
