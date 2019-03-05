@@ -452,19 +452,19 @@ btcpd_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-	btcpd_LDADD += \
-  $(BOOST_LIBS) \
-  $(BDB_LIBS) \
-  $(SSL_LIBS) \
-  $(CRYPTO_LIBS) \
-  $(MINIUPNPC_LIBS) \
-  $(EVENT_PTHREADS_LIBS) \
-  $(EVENT_LIBS) \
-  $(LIBZCASH) \
-	$(ZMQ_LIBS) \
-	$(PROTON_LIBS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBZCASH_LIBS)
+	//btcpd_LDADD += \
+  //$(BOOST_LIBS) \
+  //$(BDB_LIBS) \
+  //$(SSL_LIBS) \
+  //$(CRYPTO_LIBS) \
+  //$(MINIUPNPC_LIBS) \
+  //$(EVENT_PTHREADS_LIBS) \
+  //$(EVENT_LIBS) \
+  //$(LIBZCASH) \
+	//$(ZMQ_LIBS) \
+	//$(PROTON_LIBS) \
+  //$(LIBBITCOIN_CRYPTO) \
+  //$(LIBZCASH_LIBS)
 
 if ENABLE_PROTON
 btcpd_LDADD += $(LIBBITCOIN_PROTON) $(PROTON_LIBS)
