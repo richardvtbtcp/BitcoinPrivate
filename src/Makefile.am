@@ -266,18 +266,12 @@ libbitcoin_server_a_SOURCES = \
   policy/fees.cpp \
   pow.cpp \
   rest.cpp \
-  rpcblockchain.cpp \
-  rpcmining.cpp \
-  rpcmisc.cpp \
-  rpcnet.cpp \
-  rpcrawtransaction.cpp \
-  rpcserver.cpp \
-	rpc/blockchain.cpp \
-	rpc/mining.cpp \
-	rpc/misc.cpp \
-	rpc/net.cpp \
-	rpc/rawtransaction.cpp \
-	rpc/server.cpp \
+  rpc/rpcblockchain.cpp \
+  rpc/rpcmining.cpp \
+  rpc/rpcmisc.cpp \
+  rpc/rpcnet.cpp \
+  rpc/rpcrawtransaction.cpp \
+  rpc/rpcserver.cpp \
   script/sigcache.cpp \
   timedata.cpp \
   torcontrol.cpp \
