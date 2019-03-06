@@ -376,8 +376,10 @@ static std::pair<bool,std::string> ReadBinaryFile(const std::string &filename, s
     while ((n=fread(buffer, 1, sizeof(buffer), f)) > 0) {
         // Check for reading errors so we don't return any data if we couldn't
         // read the entire file (or up to maxsize)
-        if (ferror(f))
+        if (ferror(f)) {
+            fclose(f);
             return std::make_pair(false,"");
+        }
         retval.append(buffer, buffer+n);
         if (retval.size() > maxsize)
             break;
@@ -413,7 +415,7 @@ public:
     TorController(struct event_base* base, const std::string& target);
     ~TorController();
 
-    /** Get name fo file to store private key in */
+    /** Get name for file to store private key in */
     std::string GetPrivateKeyFile();
 
     /** Reconnect, after getting disconnected */
