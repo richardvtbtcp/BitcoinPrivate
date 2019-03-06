@@ -86,7 +86,7 @@ LIBZCASH_H = \
   zcash/prf.h \
   zcash/Proof.hpp \
   zcash/util.h \
-  zcash/Zcash.h
+  zcash/Zcash.h \
   zcash/zip32.h
   
 .PHONY: FORCE check-symbols check-security
@@ -198,7 +198,7 @@ BITCOIN_CORE_H = \
   wallet/rpcwallet.h \
   wallet/walletdb.h \
   zmq/zmqabstractnotifier.h \
-  zmq/zmqconfig.h\
+  zmq/zmqconfig.h \
   zmq/zmqnotificationinterface.h \
   zmq/zmqpublishnotifier.h
 
