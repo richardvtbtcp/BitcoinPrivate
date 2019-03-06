@@ -393,10 +393,13 @@ libbitcoin_util_a_SOURCES = \
   compat/glibc_sanity.cpp \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
+  random.cpp \
   rpc/protocol.cpp \
   support/cleanse.cpp \
   sync.cpp \
   uint256.cpp \
+  util.cpp \
+  utilmoneystr.cpp \
   utilstrencodings.cpp \
   utiltime.cpp \
   $(BITCOIN_CORE_H) \
@@ -512,7 +515,7 @@ libzcash_a_SOURCES = \
   zcash/Note.cpp \
   zcash/prf.cpp \
   zcash/util.cpp \
-    zcash/zip32.cpp \
+  zcash/zip32.cpp \
   zcash/circuit/commitment.tcc \
   zcash/circuit/gadget.tcc \
   zcash/circuit/merkle.tcc \
