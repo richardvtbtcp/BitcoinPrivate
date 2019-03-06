@@ -108,6 +108,7 @@ std::string GetUTXOFileName(int nHeight)
     return utxo_file.generic_string();
 }
 #endif
+unsigned int expiryDelta = DEFAULT_TX_EXPIRY_DELTA;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying and mining) */
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
