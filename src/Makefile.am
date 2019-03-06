@@ -410,10 +410,10 @@ libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
 endif
 
 # cli: btcp-cli
-libbitcoin_cli_a_CPPFLAGS = $(BITCOIN_INCLUDES)
+libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_cli_a_SOURCES = \
-  rpc\client.cpp \
+  rpc/client.cpp \
   $(BITCOIN_CORE_H) \
   $(LIBZCASH_H)
 
@@ -422,7 +422,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 
 # bitcoind binary #
 btcpd_SOURCES = bitcoind.cpp
-btcpd_CPPFLAGS = $(BITCOIN_INCLUDES)
+btcpd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS
 btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
