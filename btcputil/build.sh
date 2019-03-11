@@ -111,21 +111,7 @@ then
     shift
 fi
 
-# If --disable-libs is the next argument, build without libs:
-LIBS_ARG=''
-if [ "x${1:-}" = 'x--disable-libs' ]
-then
-    LIBS_ARG='--without-libs'
-    shift
-fi
 
-PREFIX="$(pwd)/depends/$BUILD/"
-
-eval "$MAKE" --version
-eval "$CC" --version
-eval "$CXX" --version
-as --version
-ld -v
 
 HOST="$HOST" BUILD="$BUILD" NO_PROTON="$PROTON_ARG" "$MAKE" "$@" -C ./depends/ V=1
 ./autogen.sh
