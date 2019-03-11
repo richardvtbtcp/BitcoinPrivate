@@ -149,13 +149,12 @@ private:
             size_type capacity;
             char* indirect;
         };
-		} _indirect__;
     } _union;
 
     T* direct_ptr(difference_type pos) { return reinterpret_cast<T*>(_union.direct) + pos; }
     const T* direct_ptr(difference_type pos) const { return reinterpret_cast<const T*>(_union.direct) + pos; }
-    T* indirect_ptr(difference_type pos) { return reinterpret_cast<T*>(_union._indirect__.indirect) + pos; }
-    const T* indirect_ptr(difference_type pos) const { return reinterpret_cast<const T*>(_union._indirect__.indirect) + pos; }
+    T* indirect_ptr(difference_type pos) { return reinterpret_cast<T*>(_union.indirect) + pos; }
+    const T* indirect_ptr(difference_type pos) const { return reinterpret_cast<const T*>(_union.indirect) + pos; }
     bool is_direct() const { return _size <= N; }
 
     void change_capacity(size_type new_capacity) {
@@ -173,17 +172,17 @@ private:
                 /* FIXME: Because malloc/realloc here won't call new_handler if allocation fails, assert
                     success. These should instead use an allocator or new/delete so that handlers
                     are called as necessary, but performance would be slightly degraded by doing so. */
-                _union._indirect__.indirect = static_cast<char*>(realloc(_union._indirect__.indirect, ((size_t)sizeof(T)) * new_capacity));
-                assert(_union._indirect__.indirect);
-                _union._indirect__.capacity = new_capacity;
+                _union.indirect = static_cast<char*>(realloc(_union.indirect, ((size_t)sizeof(T)) * new_capacity));
+                if (!_union.indirect) { new_handler_terminate(); }
+                _union.capacity = new_capacity;
             } else {
                 char* new_indirect = static_cast<char*>(malloc(((size_t)sizeof(T)) * new_capacity));
                 if (!new_indirect) { new_handler_terminate(); }
                 T* src = direct_ptr(0);
                 T* dst = reinterpret_cast<T*>(new_indirect);
                 memcpy(dst, src, size() * sizeof(T));
-                _union._indirect__.indirect = new_indirect;
-                _union._indirect__.capacity = new_capacity;
+                _union.indirect = new_indirect;
+                _union.capacity = new_capacity;
                 _size += N + 1;
             }
         }
@@ -290,7 +289,7 @@ public:
         if (is_direct()) {
             return N;
         } else {
-			return _union._indirect__.capacity;
+            return _union.capacity;
         }
     }
 
@@ -433,8 +432,8 @@ public:
     ~prevector() {
         clear();
         if (!is_direct()) {
-             free(_union._indirect__.indirect);
-            _union._indirect__.indirect = nullptr;
+            free(_union.indirect);
+            _union.indirect = NULL;
         }
     }
 
@@ -486,7 +485,7 @@ public:
         if (is_direct()) {
             return 0;
         } else {
-             return ((size_t)(sizeof(T))) * _union._indirect__.capacity;
+            return ((size_t)(sizeof(T))) * _union.capacity;
         }
     }
 };
