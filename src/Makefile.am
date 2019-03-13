@@ -106,7 +106,7 @@ LIBZCASH_H = \
   zcash/util.h \
   zcash/Zcash.h \
   zcash/zip32.h
-  
+
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #
 BITCOIN_CORE_H = \
@@ -393,7 +393,7 @@ libbitcoin_util_a_SOURCES = \
   compat/glibc_sanity.cpp \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
-  random.cpp \
+  // random.cpp \
   rpc/protocol.cpp \
   support/cleanse.cpp \
   sync.cpp \
@@ -602,4 +602,3 @@ if ENABLE_TESTS
 include Makefile.test.include
 include Makefile.gtest.include
 endif
-
