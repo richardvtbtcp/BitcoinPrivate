@@ -76,13 +76,13 @@ public:
     }
 
     template<typename Stream>
-    void Serialize(Stream& s, int nType, int nVersion) const
+    void Serialize(Stream& s, int nType = 0, int nVersion = 0) const
     {
         s.write((char*)data, sizeof(data));
     }
 
     template<typename Stream>
-    void Unserialize(Stream& s, int nType, int nVersion)
+    void Unserialize(Stream& s, int nType = 0, int nVersion = 0)
     {
         s.read((char*)data, sizeof(data));
     }

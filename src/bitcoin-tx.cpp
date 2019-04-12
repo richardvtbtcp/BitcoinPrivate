@@ -655,7 +655,7 @@ static int CommandLineRawTx(int argc, char* argv[])
         OutputTx(tx);
     }
 
-    catch (const boost::thread_interrupted&) {
+    catch (const boost::thread_interrupted &e) {
         throw;
     }
     catch (const std::exception& e) {
