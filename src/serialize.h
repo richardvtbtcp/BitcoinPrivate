@@ -438,6 +438,10 @@ public:
     void Unserialize(Stream& s) {
         n = ReadVarInt<Stream,I>(s);
     }
+
+    size_t GetSerializeSize(int nType, int nVersion) {
+        return (CSizeComputer(nType, nVersion) << n).size();
+    }
 };
 
 class CCompactSize
