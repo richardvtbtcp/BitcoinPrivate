@@ -346,7 +346,7 @@ bool ContextualCheckInputs(const CTransaction& tx, CValidationState &state, cons
 
 /** Check a transaction contextually against a set of consensus rules */
 bool ContextualCheckTransaction(const CTransaction& tx, CValidationState &state, int nHeight, int dosLevel,
-                                bool (*isInitBlockDownload)(bool) = IsInitialBlockDownload);
+                                bool (*isInitBlockDownload)() = IsInitialBlockDownload);
 
 /** Apply the effects of this transaction on the UTXO set represented by view */
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, int nHeight);
@@ -584,6 +584,8 @@ extern CBlockTreeDB *pblocktree;
  */
 int GetSpendHeight(const CCoinsViewCache& inputs);
 
+extern VersionBitsCache versionbitscache;
+
 /**
  * Determine what nVersion a new block should use.
  */
@@ -595,7 +597,6 @@ bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoins
 
 #ifdef FORK_CB_INPUT
 #define FORK_COINBASE_PER_BLOCK 10000
-#endif
 
 extern std::string forkUtxoPath;
 extern int64_t forkStartHeight;
@@ -657,6 +658,7 @@ inline uint64_t bytes2uint64(char *array)
     static_cast<uint64_t>(array[7]) << 56 & 0xff00000000000000;
     return x;
 }
+#endif
 
 inline bool isForkEnabled(int nHeight)
 {

@@ -27,7 +27,6 @@ public:
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint256 hashFinalSaplingRoot;
-    uint256 hashReserved;
     uint32_t nTime;
     uint32_t nBits;
     uint256 nNonce;
@@ -46,7 +45,6 @@ public:
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(hashFinalSaplingRoot);
-        READWRITE(hashReserved);
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
@@ -59,7 +57,6 @@ public:
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
         hashFinalSaplingRoot.SetNull();
-	hashReserved.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = uint256();
