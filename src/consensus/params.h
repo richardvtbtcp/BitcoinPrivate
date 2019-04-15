@@ -28,12 +28,15 @@ struct BIP9Deployment {
     int64_t nStartTime;
     /** Timeout/expiry MedianTime for the deployment attempt. */
     int64_t nTimeout;
+};
+
 enum UpgradeIndex {
     // Sprout must be first
     BASE_SPROUT,
     UPGRADE_TESTDUMMY,
     UPGRADE_OVERWINTER,
     UPGRADE_SAPLING,
+    DEPLOYMENT_TESTDUMMY,
     // NOTE: Also add new upgrades to NetworkUpgradeInfo in upgrades.cpp
     MAX_NETWORK_UPGRADES
 };
@@ -75,6 +78,7 @@ struct Params {
     uint256 hashGenesisBlock;
 
     bool fCoinbaseMustBeProtected;
+    bool fPowAllowMinDifficultyBlocks;
 
     /** Needs to evenly divide MAX_SUBSIDY to avoid rounding errors. */
     int nSubsidySlowStartInterval;
@@ -99,13 +103,17 @@ struct Params {
     int nMajorityRejectBlockOutdated;
     int nMajorityWindow;
     NetworkUpgrade vUpgrades[MAX_NETWORK_UPGRADES];
+    BIP9Deployment vDeployments[MAX_NETWORK_UPGRADES];
     /** Proof of work parameters */
     uint256 powLimit;
+    uint256 prePowLimit;
     boost::optional<uint32_t> nPowAllowMinDifficultyBlocksAfterHeight;
     int64_t nPowAveragingWindow;
     int64_t nPowMaxAdjustDown;
     int64_t nPowMaxAdjustUp;
     int64_t nPowTargetSpacing;
+    int64_t nRuleChangeActivationThreshold;
+    int64_t nMinerConfirmationWindow;
 
     int nPowDifficultyBombHeight;
     int nUnmovedBurnHeight;
