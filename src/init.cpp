@@ -708,7 +708,7 @@ static void ZC_LoadParams(
     )) {
         uiInterface.ThreadSafeMessageBox(strprintf(
             _("Cannot find the Bitcoin Private network parameters in the following directory:\n"
-              "%s\n"
+              "%s\n"),
                 ZC_GetParamsDir()),
             "", CClientUIInterface::MSG_ERROR);
         StartShutdown();
@@ -724,9 +724,6 @@ static void ZC_LoadParams(
     elapsed = float(tv_end.tv_sec-tv_start.tv_sec) + (tv_end.tv_usec-tv_start.tv_usec)/float(1000000);
     LogPrintf("Loaded verifying key in %fs seconds.\n", elapsed);
 
-    static_assert(
-        sizeof(boost::filesystem::path::value_type) == sizeof(codeunit),
-        "librustzcash not configured correctly");
     auto sapling_spend_str = sapling_spend.native();
     auto sapling_output_str = sapling_output.native();
     auto sprout_groth16_str = sprout_groth16.native();
@@ -737,14 +734,11 @@ static void ZC_LoadParams(
     gettimeofday(&tv_start, 0);
 
     librustzcash_init_zksnark_params(
-        reinterpret_cast<const codeunit*>(sapling_spend_str.c_str()),
-        sapling_spend_str.length(),
+        sapling_spend_str.c_str(),
         "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c",
-        reinterpret_cast<const codeunit*>(sapling_output_str.c_str()),
-        sapling_output_str.length(),
+        sapling_output_str.c_str(),
         "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028",
-        reinterpret_cast<const codeunit*>(sprout_groth16_str.c_str()),
-        sprout_groth16_str.length(),
+        sprout_groth16_str.c_str(),
         "e9b238411bd6c0ec4791e9d04245ec350c9c5744f5610dfcce4365d5ca49dfefd5054e371842b3f88fa1b9d7e8e075249b3ebabd167fa8b0f3161292d36c180a"
     );
 

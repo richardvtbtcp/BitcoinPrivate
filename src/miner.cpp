@@ -110,6 +110,7 @@ void UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, 
     // Updating time can change work required on testnet:
     if (consensusParams.nPowAllowMinDifficultyBlocksAfterHeight != boost::none) {
         pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, consensusParams);
+    }
 }
 
 CBlockTemplate* CreateNewForkBlock(bool& bFileNotFound)
@@ -136,7 +137,7 @@ CBlockTemplate* CreateNewForkBlock(bool& bFileNotFound)
     do
     {
         snappedHeight = tipHeight;
-        ret = CreateNewForkBlock(bFileNotFound, snappedHeight + 1);
+        ret = CreateNewForkBlock(bFileNotFound);
 
         {
             LOCK(cs_main);
@@ -498,7 +499,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
             if (!ContextualCheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true, txdata, Params().GetConsensus(), consensusBranchId))
                 continue;
 
-            UpdateCoins(tx, state, view, nHeight);
             UpdateCoins(tx, view, nHeight);
 
             BOOST_FOREACH(const OutputDescription &outDescription, tx.vShieldedOutput) {

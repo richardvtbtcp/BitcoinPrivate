@@ -206,7 +206,7 @@ public:
     }
 
     template<typename Stream>
-    void Unserialize(Stream &s, int nType, int nVersion) {
+    void Unserialize(Stream &s, int nType = 0, int nVersion = 0) {
         unsigned int nCode = 0;
         // version
         ::Unserialize(s, VARINT(this->nVersion), nType, nVersion);

@@ -30,6 +30,7 @@
 #include "validationinterface.h"
 #include "wallet/asyncrpcoperation_sendmany.h"
 #include "wallet/asyncrpcoperation_shieldcoinbase.h"
+#include "zcash/IncrementalMerkleTree.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -1820,8 +1821,6 @@ bool IsInitialBlockDownload(bool includeFork)
         return true;
     if (chainActive.Tip() == NULL)
         return true;
-    if (chainActive.Tip()->nChainWork < UintToArith256(chainParams.GetConsensus().nMinimumChainWork))
-        return true;
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
@@ -2025,8 +2024,6 @@ bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoins
         if (!inputs.HaveInputs(tx))
             return state.Invalid(error("CheckInputs(): %s inputs unavailable", tx.GetHash().ToString()));
 
-        // are the JoinSplit's requirements met?
-        if (!inputs.HaveJoinSplitRequirements(tx, nSpendHeight > consensusParams.zResetHeight))
         if (!inputs.HaveShieldedRequirements(tx))
             return state.Invalid(error("CheckInputs(): %s JoinSplit requirements not met", tx.GetHash().ToString()));
 
@@ -2324,7 +2321,6 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
             nNonCBIdx = forkCBPerBlock;
         }
 #endif
-        if (i > nNonCBIdx) { // not coinbases
         // restore inputs
         if (i > 0) { // not coinbases
             const CTxUndo &txundo = blockUndo.vtxundo[i-1];
@@ -2548,6 +2544,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     }
 
     SaplingMerkleTree sapling_tree;
+    ZCIncrementalMerkleTree tree;
     assert(view.GetSaplingAnchorAt(view.GetBestAnchor(SAPLING), sapling_tree));
 
     // Grab the consensus branch ID for the block's height
@@ -2571,8 +2568,6 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 return state.DoS(100, error("ConnectBlock(): inputs missing/spent"),
                                  REJECT_INVALID, "bad-txns-inputs-missingorspent");
 
-            // are the JoinSplit's requirements met?
-            if (!view.HaveJoinSplitRequirements(tx, pindex->nHeight > chainparams.GetConsensus().zResetHeight))
             if (!view.HaveShieldedRequirements(tx))
                 return state.DoS(100, error("ConnectBlock(): JoinSplit requirements not met"),
                                  REJECT_INVALID, "bad-txns-joinsplit-requirements-not-met");
@@ -2622,8 +2617,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     }
 
     if(pindex->nHeight == chainparams.GetConsensus().zResetHeight) {
-        tree = ZCIncrementalMerkleTree();
         tree.append(tree.root());
+    }
+
     view.PushAnchor(sprout_tree);
     view.PushAnchor(sapling_tree);
     if (!fJustCheck) {
@@ -2631,9 +2627,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     }
     blockundo.old_sprout_tree_root = old_sprout_tree_root;
 
-    view.PushAnchor(tree, pindex->nHeight >= chainparams.GetConsensus().zResetHeight);
-    if (!fJustCheck) {
-        pindex->hashAnchorEnd = tree.root();
+    view.PushAnchor(tree);
     // If Sapling is active, block.hashFinalSaplingRoot must be the
     // same as the root of the Sapling tree
     if (NetworkUpgradeActive(pindex->nHeight, chainparams.GetConsensus(), Consensus::UPGRADE_SAPLING)) {
@@ -2932,7 +2926,6 @@ bool static DisconnectTip(CValidationState &state, bool fBare = false) {
     UpdateTip(pindexDelete->pprev);
     // Get the current commitment tree
     ZCIncrementalMerkleTree newTree;
-    assert(pcoinsTip->GetAnchorAt(pcoinsTip->GetBestAnchor(), newTree, pindexDelete->nHeight - 1 >= Params().GetConsensus().zResetHeight));
     SproutMerkleTree newSproutTree;
     SaplingMerkleTree newSaplingTree;
     assert(pcoinsTip->GetSproutAnchorAt(pcoinsTip->GetBestAnchor(SPROUT), newSproutTree));
@@ -2970,7 +2963,6 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     }
     // Get the current commitment tree
     ZCIncrementalMerkleTree oldTree;
-    assert(pcoinsTip->GetAnchorAt(pcoinsTip->GetBestAnchor(), oldTree, chainActive.Height() >= Params().GetConsensus().zResetHeight));
     SproutMerkleTree oldSproutTree;
     SaplingMerkleTree oldSaplingTree;
     assert(pcoinsTip->GetSproutAnchorAt(pcoinsTip->GetBestAnchor(SPROUT), oldSproutTree));
@@ -3019,7 +3011,6 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
         SyncWithWallets(tx, pblock);
     }
     // Update cached incremental witnesses
-    GetMainSignals().ChainTip(pindexNew, pblock, oldTree, true);
     GetMainSignals().ChainTip(pindexNew, pblock, oldSproutTree, oldSaplingTree, true);
 
     EnforceNodeDeprecation(pindexNew->nHeight);
@@ -5878,10 +5869,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
               (strCommand == "filterload" ||
                strCommand == "filteradd"))
     {
-        if (pfrom->nVersion >= NO_BLOOM_VERSION) {
-            Misbehaving(pfrom->GetId(), 100);
-            return false;
-        } else if (GetBoolArg("-enforcenodebloom", false)) {
+        if (GetBoolArg("-enforcenodebloom", false)) {
             pfrom->fDisconnect = true;
             return false;
         }

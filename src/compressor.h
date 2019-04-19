@@ -64,7 +64,7 @@ public:
     }
 
     template<typename Stream>
-    void Serialize(Stream &s, int nType, int nVersion) const {
+    void Serialize(Stream &s, int nType = 0, int nVersion = 0) const {
         std::vector<unsigned char> compr;
         if (Compress(compr)) {
             s << CFlatData(compr);
@@ -76,7 +76,7 @@ public:
     }
 
     template<typename Stream>
-    void Unserialize(Stream &s, int nType, int nVersion) {
+    void Unserialize(Stream &s, int nType = 0, int nVersion = 0) {
         unsigned int nSize = 0;
         s >> VARINT(nSize);
         if (nSize < nSpecialScripts) {
@@ -112,7 +112,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType = 0, int nVersion = 0) {
         if (!ser_action.ForRead()) {
             uint64_t nVal = CompressAmount(txout.nValue);
             READWRITE(VARINT(nVal));
