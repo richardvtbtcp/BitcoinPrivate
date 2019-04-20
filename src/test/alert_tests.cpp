@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(AlertDisablesRPC)
     mapAlerts.clear();
 }
 
-static bool falseFunc() { return false; }
+static bool falseFunc(bool b=false) { return b; }
 
 BOOST_AUTO_TEST_CASE(PartitionAlert)
 {

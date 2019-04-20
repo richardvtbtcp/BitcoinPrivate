@@ -201,14 +201,14 @@ enum
  * code. Adding "ADD_SERIALIZE_METHODS" in the body of the class causes these wrappers to be
  * added as members. 
  */
-#define ADD_SERIALIZE_METHODS                                         \
-    template<typename Stream>                                         \
-    void Serialize(Stream& s) const {                                 \
-        NCONST_PTR(this)->SerializationOp(s, CSerActionSerialize());  \
-    }                                                                 \
-    template<typename Stream>                                         \
-    void Unserialize(Stream& s) {                                     \
-        SerializationOp(s, CSerActionUnserialize());                  \
+#define ADD_SERIALIZE_METHODS                                         			\
+    template<typename Stream>                                         			\
+    void Serialize(Stream& s) const {                                 			\
+        NCONST_PTR(this)->SerializationOp(s, CSerActionSerialize());  	\
+    }                                                                 			\
+    template<typename Stream>                                         			\
+    void Unserialize(Stream& s) {                                     			\
+        SerializationOp(s, CSerActionUnserialize());                  			\
     }
 
 template<typename Stream> inline void Serialize(Stream& s, char a    ) { ser_writedata8(s, a); } // TODO Get rid of bare char
@@ -225,7 +225,7 @@ template<typename Stream> inline void Serialize(Stream& s, double a  ) { ser_wri
 
 template<typename Stream> inline void Unserialize(Stream& s, char& a    ) { a = ser_readdata8(s); } // TODO Get rid of bare char
 template<typename Stream> inline void Unserialize(Stream& s, int8_t& a  ) { a = ser_readdata8(s); }
-template<typename Stream> inline void Unserialize(Stream& s, uint8_t& a ) { a = ser_readdata8(s); }
+template<typename Stream> inline void Unserialize(Stream& s, uint8_t& a, int = 0, int = 0 ) { a = ser_readdata8(s); }
 template<typename Stream> inline void Unserialize(Stream& s, int16_t& a ) { a = ser_readdata16(s); }
 template<typename Stream> inline void Unserialize(Stream& s, uint16_t& a) { a = ser_readdata16(s); }
 template<typename Stream> inline void Unserialize(Stream& s, int32_t& a ) { a = ser_readdata32(s); }
@@ -440,6 +440,10 @@ protected:
 public:
     CVarInt(I& nIn) : n(nIn) { }
 
+    unsigned int GetSerializeSize(int, int) const {
+        return GetSizeOfVarInt<I>(n);
+    }
+
     template<typename Stream>
     void Serialize(Stream &s) const {
         WriteVarInt<Stream,I>(s, n);
@@ -587,13 +591,13 @@ template<typename Stream, typename T> void Unserialize(Stream& os, std::unique_p
  * If none of the specialized versions above matched, default to calling member function.
  */
 template<typename Stream, typename T>
-inline void Serialize(Stream& os, const T& a)
+inline void Serialize(Stream& os, const T& a, int nType = 0, int nVersion = 0)
 {
     a.Serialize(os);
 }
 
 template<typename Stream, typename T>
-inline void Unserialize(Stream& is, T& a)
+inline void Unserialize(Stream& is, T& a, int nType = 0, int nVersion = 0)
 {
     a.Unserialize(is);
 }
@@ -649,6 +653,27 @@ inline void Serialize(Stream& os, const prevector<N, T>& v)
     Serialize_impl(os, v, T());
 }
 
+template<typename Stream, typename T, typename A>
+void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const unsigned char&)
+{
+    WriteCompactSize(os, v.size());
+    if (!v.empty())
+        os.write((char*)&v[0], v.size() * sizeof(T));
+}
+
+template<typename Stream, typename T, typename A, typename V>
+void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const V&)
+{
+    WriteCompactSize(os, v.size());
+    for (typename std::vector<T, A>::const_iterator vi = v.begin(); vi != v.end(); ++vi)
+        ::Serialize(os, (*vi), nType, nVersion);
+}
+
+template<typename Stream, typename T, typename A>
+inline void Serialize(Stream& os, const std::vector<T, A>& v, int nType, int nVersion)
+{
+    Serialize_impl(os, v, nType, nVersion, T());
+}
 
 template<typename Stream, unsigned int N, typename T>
 void Unserialize_impl(Stream& is, prevector<N, T>& v, const unsigned char&)
@@ -690,6 +715,45 @@ inline void Unserialize(Stream& is, prevector<N, T>& v)
     Unserialize_impl(is, v, T());
 }
 
+template<typename Stream, typename T, typename A>
+void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const unsigned char&)
+{
+    // Limit size per read so bogus size value won't cause out of memory
+    v.clear();
+    unsigned int nSize = ReadCompactSize(is);
+    unsigned int i = 0;
+    while (i < nSize)
+    {
+        unsigned int blk = std::min(nSize - i, (unsigned int)(1 + 4999999 / sizeof(T)));
+        v.resize(i + blk);
+        is.read((char*)&v[i], blk * sizeof(T));
+        i += blk;
+    }
+}
+
+template<typename Stream, typename T, typename A, typename V>
+void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const V&)
+{
+    v.clear();
+    unsigned int nSize = ReadCompactSize(is);
+    unsigned int i = 0;
+    unsigned int nMid = 0;
+    while (nMid < nSize)
+    {
+        nMid += 5000000 / sizeof(T);
+        if (nMid > nSize)
+            nMid = nSize;
+        v.resize(nMid);
+        for (; i < nMid; i++)
+            Unserialize(is, v[i], nType, nVersion);
+    }
+}
+
+template<typename Stream, typename T, typename A>
+inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersion)
+{
+    Unserialize_impl(is, v, nType, nVersion, T());
+}
 
 
 /**
@@ -916,7 +980,6 @@ void Unserialize(Stream& is, std::list<T, A>& l)
 }
 
 
-
 /**
  * unique_ptr
  */
@@ -948,8 +1011,6 @@ void Unserialize(Stream& is, std::shared_ptr<const T>& p)
 {
     p = std::make_shared<const T>(deserialize, is);
 }
-
-
 
 /**
  * Support for ADD_SERIALIZE_METHODS and READWRITE macro
