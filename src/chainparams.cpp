@@ -154,6 +154,8 @@ public:
 
         nForkStartHeight = 272991;
         nForkHeightRange = 5467;
+        ForkStartHeight = 272991;
+        ForkHeightRange = 5467;
     }
 };
 static CMainParams mainParams;
