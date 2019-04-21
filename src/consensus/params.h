@@ -12,6 +12,11 @@
 
 namespace Consensus {
 
+enum DeploymentPos {
+    DEPLOYMENT_TESTDUMMY,
+    MAX_VERSION_BITS_DEPLOYMENTS
+};
+
 /**
  * Struct for each individual consensus rule change using BIP9.
  * Index into Params.vUpgrades and NetworkUpgradeInfo
@@ -36,7 +41,6 @@ enum UpgradeIndex {
     UPGRADE_TESTDUMMY,
     UPGRADE_OVERWINTER,
     UPGRADE_SAPLING,
-    DEPLOYMENT_TESTDUMMY,
     // NOTE: Also add new upgrades to NetworkUpgradeInfo in upgrades.cpp
     MAX_NETWORK_UPGRADES
 };

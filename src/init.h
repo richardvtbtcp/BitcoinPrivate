@@ -21,8 +21,18 @@ class thread_group;
 extern CWallet* pwalletMain;
 extern ZCJoinSplit* pzcashParams;
 
-void StartShutdown();
-bool ShutdownRequested();
+extern std::atomic<bool> fRequestShutdown;
+
+inline void StartShutdown()
+{
+	fRequestShutdown = true;
+}
+
+inline bool ShutdownRequested()
+{
+	return fRequestShutdown;
+}
+
 /** Interrupt threads */
 void Interrupt(boost::thread_group& threadGroup);
 void Shutdown();

@@ -28,9 +28,7 @@
 
 #include "librustzcash.h"
 
-CClientUIInterface uiInterface; // Declared but not defined in ui_interface.h
-CWallet* pwalletMain;
-ZCJoinSplit *pzcashParams;
+CWallet* pwalletMainTest;
 
 extern bool fPrintToConsole;
 extern void noui_connect();
@@ -73,9 +71,9 @@ TestingSetup::TestingSetup()
         InitBlockIndex();
 #ifdef ENABLE_WALLET
         bool fFirstRun;
-        pwalletMain = new CWallet("wallet.dat");
-        pwalletMain->LoadWallet(fFirstRun);
-        RegisterValidationInterface(pwalletMain);
+        pwalletMainTest = new CWallet("wallet.dat");
+        pwalletMainTest->LoadWallet(fFirstRun);
+        RegisterValidationInterface(pwalletMainTest);
 #endif
         nScriptCheckThreads = 3;
         for (int i=0; i < nScriptCheckThreads-1; i++)
@@ -89,9 +87,9 @@ TestingSetup::~TestingSetup()
         threadGroup.interrupt_all();
         threadGroup.join_all();
 #ifdef ENABLE_WALLET
-        UnregisterValidationInterface(pwalletMain);
-        delete pwalletMain;
-        pwalletMain = NULL;
+        UnregisterValidationInterface(pwalletMainTest);
+        delete pwalletMainTest;
+        pwalletMainTest = NULL;
 #endif
         UnloadBlockIndex();
         delete pcoinsTip;

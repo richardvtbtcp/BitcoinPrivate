@@ -10,6 +10,7 @@ TEST(PoW, DifficultyAveraging) {
     const Consensus::Params& params = Params().GetConsensus();
     size_t lastBlk = 2*params.nPowAveragingWindow;
     size_t firstBlk = lastBlk - params.nPowAveragingWindow;
+    arith_uint256 limit = UintToArith256(params.prePowLimit);
 
     // Start with blocks evenly-spaced and equal difficulty
     std::vector<CBlockIndex> blocks(lastBlk+1);
@@ -27,7 +28,7 @@ TEST(PoW, DifficultyAveraging) {
     EXPECT_EQ(CalculateNextWorkRequired(bnAvg,
                                         blocks[lastBlk].GetMedianTimePast(),
                                         blocks[firstBlk].GetMedianTimePast(),
-                                        params),
+                                        params, limit),
               GetNextWorkRequired(&blocks[lastBlk], nullptr, params));
     // Result should be unchanged, modulo integer division precision loss
     arith_uint256 bnRes;
@@ -44,7 +45,7 @@ TEST(PoW, DifficultyAveraging) {
     EXPECT_EQ(CalculateNextWorkRequired(bnAvg,
                                         blocks[lastBlk].GetMedianTimePast(),
                                         blocks[firstBlk].GetMedianTimePast(),
-                                        params),
+                                        params, limit),
               GetNextWorkRequired(&blocks[lastBlk], nullptr, params));
     // Result should not be unchanged
     EXPECT_NE(0x1e7fffff, GetNextWorkRequired(&blocks[lastBlk], nullptr, params));
@@ -57,7 +58,7 @@ TEST(PoW, DifficultyAveraging) {
     EXPECT_NE(CalculateNextWorkRequired(bnAvg,
                                         blocks[lastBlk].GetMedianTimePast(),
                                         blocks[firstBlk].GetMedianTimePast(),
-                                        params),
+                                        params, limit),
               GetNextWorkRequired(&blocks[lastBlk], nullptr, params));
 
     // Result should be the same as if the average difficulty was used
@@ -65,7 +66,7 @@ TEST(PoW, DifficultyAveraging) {
     EXPECT_EQ(CalculateNextWorkRequired(average,
                                         blocks[lastBlk].GetMedianTimePast(),
                                         blocks[firstBlk].GetMedianTimePast(),
-                                        params),
+                                        params, limit),
               GetNextWorkRequired(&blocks[lastBlk], nullptr, params));
 }
 
