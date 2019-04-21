@@ -153,6 +153,7 @@ BITCOIN_CORE_H = \
   key_io.h \
   keystore.h \
   dbwrapper.h \
+  leveldbwrapper.h \
   limitedmap.h \
   main.h \
   memusage.h \
@@ -247,6 +248,7 @@ libbitcoin_server_a_SOURCES = \
   httpserver.cpp \
   init.cpp \
   dbwrapper.cpp \
+  leveldbwrapper.cpp \
   main.cpp \
   merkleblock.cpp \
   metrics.cpp \
@@ -258,12 +260,12 @@ libbitcoin_server_a_SOURCES = \
   policy/fees.cpp \
   pow.cpp \
   rest.cpp \
-  rpc\blockchain.cpp \
-  rpc\mining.cpp \
-  rpc\misc.cpp \
-  rpc\net.cpp \
-  rpc\rawtransaction.cpp \
-  rpc\server.cpp \
+  rpc/blockchain.cpp \
+  rpc/mining.cpp \
+  rpc/misc.cpp \
+  rpc/net.cpp \
+  rpc/rawtransaction.cpp \
+  rpc/server.cpp \
   script/sigcache.cpp \
   timedata.cpp \
   torcontrol.cpp \

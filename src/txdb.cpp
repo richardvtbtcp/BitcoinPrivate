@@ -35,6 +35,9 @@ static const char DB_FLAG = 'F';
 static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
+static const char DB_ANCHOR = 'a';
+static const char DB_ANCHOR_POST = 'P';
+
 
 void static BatchWriteAnchor(CLevelDBBatch &batch,
                              const uint256 &croot,
@@ -51,6 +54,8 @@ void static BatchWriteAnchor(CLevelDBBatch &batch,
         if(postBurn)
             batch.Write(make_pair(DB_ANCHOR_POST, croot), true);
     }
+}
+
 CCoinsViewDB::CCoinsViewDB(std::string dbName, size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / dbName, nCacheSize, fMemory, fWipe) {
 }
 
@@ -59,6 +64,8 @@ void static BatchWriteNullifier(CLevelDBBatch &batch, const uint256 &nf, const b
         batch.Erase(make_pair(DB_NULLIFIER, nf));
     else
         batch.Write(make_pair(DB_NULLIFIER, nf), true);
+}
+
 CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe) 
 {
 }

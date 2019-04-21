@@ -837,9 +837,9 @@ TEST(checktransaction_tests, OverwinterNotActive) {
     MockCValidationState state;
     // during initial block download, DoS ban score should be zero, else 100
     EXPECT_CALL(state, DoS(0, false, REJECT_INVALID, "tx-overwinter-not-active", false)).Times(1);
-    ContextualCheckTransaction(tx, state, 1, 100, []() { return true; });
+    ContextualCheckTransaction(tx, state, 1, 100, [](bool b) { return true; });
     EXPECT_CALL(state, DoS(100, false, REJECT_INVALID, "tx-overwinter-not-active", false)).Times(1);
-    ContextualCheckTransaction(tx, state, 1, 100, []() { return false; });
+    ContextualCheckTransaction(tx, state, 1, 100, [](bool b) { return false; });
 }
 
 // This tests a transaction without the fOverwintered flag set, against the Overwinter consensus rule set.

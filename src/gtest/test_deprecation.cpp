@@ -128,7 +128,7 @@ TEST_F(DeprecationTest, AlertNotify) {
     mapArgs["-alertnotify"] = std::string("echo %s >> ") + temp.string();
 
     EXPECT_CALL(mock_, ThreadSafeMessageBox(::testing::_, "", CClientUIInterface::MSG_WARNING));
-    EnforceNodeDeprecation(DEPRECATION_HEIGHT - DEPRECATION_WARN_LIMIT, false, false);
+    EnforceNodeDeprecation(DEPRECATION_HEIGHT - DEPRECATION_WARN_LIMIT);
 
     std::vector<std::string> r = read_lines(temp);
     EXPECT_EQ(r.size(), 1u);
