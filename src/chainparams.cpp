@@ -231,12 +231,9 @@ public:
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = true;
 
-        checkpointData = (Checkpoints::CCheckpointData) {
-            boost::assign::map_list_of
-            ( 0, consensus.hashGenesisBlock),
-            genesis.nTime,
-            0,
-            0
+        checkpointData = (CCheckpointData) {
+        boost::assign::map_list_of
+        (0, consensus.hashGenesisBlock)
         };
 
         nForkStartHeight = 10;
