@@ -307,6 +307,11 @@ public:
         nForkStartHeight = 50;
         nForkHeightRange = 0;
     }
+
+    void UpdateNetworkUpgradeParameters(Consensus::UpgradeIndex idx, int nActivationHeight) {
+         assert(idx > Consensus::BASE_SPROUT && idx < Consensus::MAX_NETWORK_UPGRADES);
+	 consensus.vUpgrades[idx].nActivationHeight = nActivationHeight;
+    }
 };
 static CRegTestParams regTestParams;
 
@@ -329,6 +334,10 @@ CChainParams &Params(CBaseChainParams::Network network) {
             assert(false && "Unimplemented network");
             return mainParams;
     }
+}
+
+void UpdateNetworkUpgradeParameters(Consensus::UpgradeIndex idx, int nActivationHeight) {
+    regTestParams.UpdateNetworkUpgradeParameters(idx, nActivationHeight);
 }
 
 void SelectParams(CBaseChainParams::Network network) {

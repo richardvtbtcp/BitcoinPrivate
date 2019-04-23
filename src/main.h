@@ -25,6 +25,7 @@
 #include "sync.h"
 #include "tinyformat.h"
 #include "txmempool.h"
+#include "versionbits.h"
 #include "uint256.h"
 
 #include <algorithm>
@@ -602,6 +603,8 @@ extern int64_t forkStartHeight;
 extern int64_t forkHeightRange;
 extern int64_t forkCBPerBlock;
 extern uint256 forkExtraHashSentinel;
+
+extern VersionBitsCache versionbitscache;
 
 std::string GetUTXOFileName(int nHeight);
 
