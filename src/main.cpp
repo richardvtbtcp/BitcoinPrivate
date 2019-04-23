@@ -86,8 +86,6 @@ uint256 forkExtraHashSentinel = uint256S("f0f0f0f0fafafafaffffffffffffffffffffff
 #include <boost/range/combine.hpp>
 
 std::string forkUtxoPath;
-int64_t forkStartHeight;
-int64_t forkHeightRange;
 int64_t forkCBPerBlock;
 uint256 hashPid = GetRandHash();
 

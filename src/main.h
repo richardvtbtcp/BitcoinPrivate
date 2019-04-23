@@ -599,8 +599,8 @@ bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoins
 #endif
 
 extern std::string forkUtxoPath;
-extern int64_t forkStartHeight;
-extern int64_t forkHeightRange;
+static int64_t forkStartHeight;
+static int64_t forkHeightRange;
 extern int64_t forkCBPerBlock;
 extern uint256 forkExtraHashSentinel;
 
