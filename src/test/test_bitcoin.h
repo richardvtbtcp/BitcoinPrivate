@@ -18,17 +18,11 @@ struct BasicTestingSetup {
     ~BasicTestingSetup();
 };
 
-// Setup w.r.t. zk-SNARK API
-struct JoinSplitTestingSetup: public BasicTestingSetup {
-    JoinSplitTestingSetup();
-    ~JoinSplitTestingSetup();
-};
-
 /** Testing setup that configures a complete environment.
  * Included are data directory, coins database, script check threads
  * and wallet (if enabled) setup.
  */
-struct TestingSetup: public JoinSplitTestingSetup {
+struct TestingSetup: public BasicTestingSetup {
     CCoinsViewDB *pcoinsdbview;
     boost::filesystem::path orig_current_path;
     boost::filesystem::path pathTemp;

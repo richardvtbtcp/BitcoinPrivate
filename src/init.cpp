@@ -935,6 +935,9 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     forkHeightRange = GetArg("-fork-heightrange", chainparams.ForkHeightRange());
     forkCBPerBlock = GetArg("-fork-cbperblock", FORK_COINBASE_PER_BLOCK);
     LogPrintf("Running with fork parameters datadir=%s forkStartHeight=%d, forkHeightRange=%d\n", forkUtxoPath, forkStartHeight, forkHeightRange);
+#else
+    forkStartHeight = 272991;
+    forkHeightRange = 5467;
 #endif
 
     // ********************************************************* Step 3: parameter-to-internal-flags

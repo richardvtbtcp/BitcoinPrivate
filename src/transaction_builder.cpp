@@ -271,7 +271,7 @@ TransactionBuilderResult TransactionBuilder::Build()
     CScript scriptCode;
     try {
         dataToBeSigned = SignatureHash(scriptCode, mtx, NOT_AN_INPUT, SIGHASH_ALL, 0, consensusBranchId);
-    } catch (std::logic_error ex) {
+    } catch (std::logic_error &ex) {
         librustzcash_sapling_proving_ctx_free(ctx);
         return TransactionBuilderResult("Could not construct signature hash");
     }
