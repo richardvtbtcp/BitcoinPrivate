@@ -72,9 +72,6 @@
 
 using namespace std;
 
-int64_t forkStartHeight;
-int64_t forkHeightRange;
-
 extern void ThreadSendAlert();
 
 ZCJoinSplit* pzcashParams = NULL;
