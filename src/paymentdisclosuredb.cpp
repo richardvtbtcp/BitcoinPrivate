@@ -61,8 +61,10 @@ bool PaymentDisclosureDB::Put(const PaymentDisclosureKey& key, const PaymentDisc
     ssValue << info;
     leveldb::Slice slice(&ssValue[0], ssValue.size());
 
+#ifdef ENABLE_WALLET
     leveldb::Status status = db->Put(writeOptions, key.ToString(), slice);
     dbwrapper_private::HandleError(status);
+#endif
     return true;
 }
 
@@ -75,6 +77,7 @@ bool PaymentDisclosureDB::Get(const PaymentDisclosureKey& key, PaymentDisclosure
     std::lock_guard<std::mutex> guard(lock_);
 
     std::string strValue;
+#ifdef ENABLE_WALLET
     leveldb::Status status = db->Get(readOptions, key.ToString(), &strValue);
     if (!status.ok()) {
         if (status.IsNotFound())
@@ -82,6 +85,7 @@ bool PaymentDisclosureDB::Get(const PaymentDisclosureKey& key, PaymentDisclosure
         LogPrintf("PaymentDisclosure: LevelDB read failure: %s\n", status.ToString());
         dbwrapper_private::HandleError(status);
     }
+#endif
 
     try {
         CDataStream ssValue(strValue.data(), strValue.data() + strValue.size(), SER_DISK, CLIENT_VERSION);

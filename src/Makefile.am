@@ -3,6 +3,8 @@ DIST_SUBDIRS = secp256k1 univalue
 AM_LDFLAGS = $(PTHREAD_CFLAGS) $(LIBTOOL_LDFLAGS) $(SAN_LDFLAGS) $(HARDENED_LDFLAGS)
 AM_CXXFLAGS = $(SAN_CXXFLAGS) $(HARDENED_CXXFLAGS) $(ERROR_CXXFLAGS)
 AM_CPPFLAGS = $(HARDENED_CPPFLAGS)
+PROTON_SOURCES=
+ZMQ_SOURCES=
 EXTRA_LIBRARIES =
 
 if EMBEDDED_LEVELDB
@@ -38,12 +40,6 @@ LIBSNARK=snark/libsnark.a
 LIBUNIVALUE=univalue/libunivalue.la
 LIBZCASH=libzcash.a
 
-if ENABLE_ZMQ
-LIBBITCOIN_ZMQ=libbitcoin_zmq.a
-endif
-if ENABLE_PROTON
-LIBBITCOIN_PROTON=libbitcoin_proton.a
-endif
 if BUILD_BITCOIN_LIBS
 LIBZCASH_CONSENSUS=libzcashconsensus.la
 endif
@@ -74,15 +70,13 @@ $(LIBUNIVALUE): $(wildcard univalue/lib/*) $(wildcard univalue/include/*)
 
 # Make is not made aware of per-object dependencies to avoid limiting building parallelization
 # But to build the less dependent modules first, we manually select their order here:
-EXTRA_LIBRARIES = \
+EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBBITCOIN_PROTON) \
   $(LIBZCASH)
 
 lib_LTLIBRARIES = $(LIBZCASH_CONSENSUS)
@@ -231,8 +225,22 @@ obj/build.h: FORCE
 	  $(abs_top_srcdir)
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+if ENABLE_ZMQ
+ZMQ_SOURCES = \
+  zmq/zmqabstractnotifier.cpp \
+  zmq/zmqnotificationinterface.cpp \
+  zmq/zmqpublishnotifier.cpp
+endif
+
+if ENABLE_PROTON
+PROTON_SOURCES = \
+  amqp/amqpabstractnotifier.cpp \
+  amqp/amqpnotificationinterface.cpp \
+  amqp/amqppublishnotifier.cpp
+endif
+
 # server: btcpd
-libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS) $(ZMQ_CFLAGS)
 libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
   sendalert.cpp \
@@ -274,26 +282,10 @@ libbitcoin_server_a_SOURCES = \
   txmempool.cpp \
   validationinterface.cpp \
   versionbits.cpp \
+  $(PROTON_SOURCES) \
+  $(ZMQ_SOURCES) \
   $(BITCOIN_CORE_H) \
   $(LIBZCASH_H)
-
-if ENABLE_ZMQ
-libbitcoin_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
-libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS
-libbitcoin_zmq_a_SOURCES = \
-  zmq/zmqabstractnotifier.cpp \
-  zmq/zmqnotificationinterface.cpp \
-  zmq/zmqpublishnotifier.cpp
-endif
-
-if ENABLE_PROTON
-libbitcoin_proton_a_CPPFLAGS = $(BITCOIN_INCLUDES)
-libbitcoin_proton_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_proton_a_SOURCES = \
-  amqp/amqpabstractnotifier.cpp \
-  amqp/amqpnotificationinterface.cpp \
-  amqp/amqppublishnotifier.cpp
-endif
 
 # wallet: btcpd, but only linked when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -427,7 +419,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 # bitcoind binary #
 btcpd_SOURCES = bitcoind.cpp
 btcpd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS
+btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
@@ -440,11 +432,9 @@ btcpd_LDADD = \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBBITCOIN_PROTON) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBZCASH) \
-   $(LIBSNARK) \
+  $(LIBSNARK) \
   $(LIBLEVELDB) \
   $(LIBMEMENV) \
   $(LIBSECP256K1)

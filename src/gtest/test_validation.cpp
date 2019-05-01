@@ -91,14 +91,18 @@ TEST(Validation, ReceivedBlockTransactions) {
 
     // Create a fake genesis block
     CBlock block1;
+#ifdef ENABLE_WALLET
     block1.vtx.push_back(GetValidReceive(*params, sk, 5, true));
+#endif
     block1.hashMerkleRoot = block1.BuildMerkleTree();
     CBlockIndex fakeIndex1 {block1};
 
     // Create a fake child block
     CBlock block2;
     block2.hashPrevBlock = block1.GetHash();
+#ifdef ENABLE_WALLET
     block2.vtx.push_back(GetValidReceive(*params, sk, 10, true));
+#endif
     block2.hashMerkleRoot = block2.BuildMerkleTree();
     CBlockIndex fakeIndex2 {block2};
     fakeIndex2.pprev = &fakeIndex1;
