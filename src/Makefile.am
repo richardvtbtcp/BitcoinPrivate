@@ -85,6 +85,10 @@ bin_PROGRAMS =
 noinst_PROGRAMS =
 TESTS =
 
+if BUILD_BITCOIND
+  bin_PROGRAMS += btcpd
+endif
+
 if BUILD_BITCOIN_UTILS
   bin_PROGRAMS += btcp-cli zcash-tx
 endif
@@ -420,7 +424,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 btcpd_SOURCES = bitcoind.cpp
 btcpd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(ZMQ_LIBS)
 
 if TARGET_WINDOWS
 btcpd_SOURCES += bitcoind-res.rc
@@ -434,7 +438,6 @@ btcpd_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBZCASH) \
-  $(LIBSNARK) \
   $(LIBLEVELDB) \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
@@ -492,7 +495,6 @@ zcash_tx_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBSECP256K1) \
   $(LIBZCASH) \
-  $(LIBSNARK) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBZCASH_LIBS)
 
@@ -515,9 +517,17 @@ libzcash_a_SOURCES = \
   zcash/circuit/merkle.tcc \
   zcash/circuit/note.tcc \
   zcash/circuit/prfs.tcc \
-  zcash/circuit/utils.tcc
+  zcash/circuit/utils.tcc \
+  snark/libsnark/algebra/curves/alt_bn128/alt_bn128_g1.cpp \
+  snark/libsnark/algebra/curves/alt_bn128/alt_bn128_g2.cpp \
+  snark/libsnark/algebra/curves/alt_bn128/alt_bn128_init.cpp \
+  snark/libsnark/algebra/curves/alt_bn128/alt_bn128_pairing.cpp \
+  snark/libsnark/algebra/curves/alt_bn128/alt_bn128_pp.cpp \
+  snark/libsnark/common/profiling.cpp \
+  snark/libsnark/common/utils.cpp \
+  snark/libsnark/gadgetlib1/constraint_profiling.cpp
 
-libzcash_a_CPPFLAGS = $(AM_CPPFLAGS) $(PIC_FLAGS) -DBINARY_OUTPUT -DCURVE_ALT_BN128 -DBOOST_SPIRIT_THREADSAFE -fvisibility=hidden -DSTATIC $(BITCOIN_INCLUDES)
+libzcash_a_CPPFLAGS = $(AM_CPPFLAGS) $(PIC_FLAGS) -DNO_PROCPS=1 -DBINARY_OUTPUT -DCURVE_ALT_BN128 -DBOOST_SPIRIT_THREADSAFE -fvisibility=hidden -DSTATIC $(BITCOIN_INCLUDES)
 libzcash_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libzcash_a_LDFLAGS = $(AM_LDFLAGS)
 
