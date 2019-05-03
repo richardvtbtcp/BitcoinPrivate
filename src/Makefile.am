@@ -424,7 +424,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 btcpd_SOURCES = bitcoind.cpp
 btcpd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 btcpd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+btcpd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(ZMQ_LIBS)
 
 if TARGET_WINDOWS
 btcpd_SOURCES += bitcoind-res.rc
